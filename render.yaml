@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mcgourmet-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn mcgourmet_bot:flask_app --bind 0.0.0.0:$PORT --workers 1 --threads 4
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: GMAIL_USER
+        value: "inputmcgourmet@gmail.com"
+      - key: EMAIL_DESTINO
+        value: "mcp.gourmet@gmail.com"
+      - key: GMAIL_PASSWORD
+        sync: false
+    disk:
+      name: mcgourmet-db
+      mountPath: /data
+      sizeGB: 1
