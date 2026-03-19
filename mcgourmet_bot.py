@@ -12,8 +12,7 @@ from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 import os
 
-DB_PATH = os.environ.get("DB_PATH", "mcgourmet.db")
-
+DB_PATH = os.environ.get("DB_PATH", "/data/mcgourmet.db" if os.path.exists("/data") else "mcgourmet.db")
 # Configuracion Gmail — completar antes de usar
 GMAIL_USER     = os.environ.get("GMAIL_USER", "")
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD", "")
@@ -324,6 +323,7 @@ def procesar(session_id, mensaje):
     return "No entendi ese comando.\nEscribi AYUDA para ver las opciones."
 
 # ─── FLASK ────────────────────────────────────────────────────
+setup_database()
 flask_app = Flask(__name__)
 CORS(flask_app)
 
