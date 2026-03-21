@@ -158,23 +158,28 @@ def crear_pedido(session_id, nombre, telefono, notas):
     cur = get_cur(conn)
     ph = "%s" if USE_PG else "?"
     
-    # INSERT simple, sin RETURNING (evita errores con psycopg2)
-    sql = f"""INSERT INTO tbl_PedBot 
+    # INSERT simple, sin RETURNING
+    sql = f"""INSERT INTO "tbl_PedBot" 
               (session_id, nombre_cliente, telefono, fecha_pedido, estado, notas, total) 
               VALUES ({ph},{ph},{ph},{ph},{ph},{ph},0)"""
     
-    cur.execute(sql, (session_id, nombre, telefono, 
-                      datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                      "CONFIRMADO", notas))
-    
-    conn.commit()
-    
-    # Obtener el último ID insertado
-    cur.execute("SELECT LASTVAL()")
-    id_p = cur.fetchone()[0]
-    
-    conn.close()
-    return id_p
+    try:
+        cur.execute(sql, (session_id, nombre, telefono, 
+                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                          "CONFIRMADO", notas))
+        conn.commit()
+        
+        # Obtener el último ID insertado (forma compatible)
+        cur.execute("SELECT LASTVAL()")
+        id_p = cur.fetchone()[0]
+        
+        conn.close()
+        return id_p
+    except Exception as e:
+        print(f"❌ Error en crear_pedido: {e}")
+        conn.rollback()
+        conn.close()
+        return None
 
 def agregar_detalle(id_pedido, id_producto, cantidad):
     conn = get_conn(); cur = get_cur(conn)
