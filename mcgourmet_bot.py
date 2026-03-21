@@ -154,17 +154,27 @@ def contar_pedidos_hoy():
     conn.close(); return count
 
 def crear_pedido(session_id, nombre, telefono, notas):
-    conn = get_conn(); cur = get_cur(conn)
-    ph   = "%s" if USE_PG else "?"
-    sql  = f"INSERT INTO tbl_PedBot (session_id,nombre_cliente,telefono,fecha_pedido,estado,notas) VALUES ({ph},{ph},{ph},{ph},{ph},{ph})"
-    if USE_PG:
-        sql += " RETURNING id_pedido"
-    cur.execute(sql, (session_id, nombre, telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "CONFIRMADO", notas))
-    if USE_PG:
-        id_p = cur.fetchone()["id_pedido"]
-    else:
-        id_p = cur.lastrowid
-    conn.commit(); conn.close(); return id_p
+    conn = get_conn()
+    cur = get_cur(conn)
+    ph = "%s" if USE_PG else "?"
+    
+    # INSERT simple, sin RETURNING (evita errores con psycopg2)
+    sql = f"""INSERT INTO tbl_PedBot 
+              (session_id, nombre_cliente, telefono, fecha_pedido, estado, notas, total) 
+              VALUES ({ph},{ph},{ph},{ph},{ph},{ph},0)"""
+    
+    cur.execute(sql, (session_id, nombre, telefono, 
+                      datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                      "CONFIRMADO", notas))
+    
+    conn.commit()
+    
+    # Obtener el último ID insertado
+    cur.execute("SELECT LASTVAL()")
+    id_p = cur.fetchone()[0]
+    
+    conn.close()
+    return id_p
 
 def agregar_detalle(id_pedido, id_producto, cantidad):
     conn = get_conn(); cur = get_cur(conn)
