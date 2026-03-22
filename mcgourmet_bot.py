@@ -34,7 +34,17 @@ LIMITE_PEDIDOS_DIA = 10
 # ── CONEXION BD ───────────────────────────────────────────────
 def get_conn():
     if USE_PG:
-        return psycopg2.connect(DATABASE_URL, sslmode="require")
+        #return psycopg2.connect(DATABASE_URL, sslmode="require")
+        import time
+        for intento in range(3):
+            try:
+                return psycopg2.connect(DATABASE_URL, sslmode="require", connect_timeout=10)
+            except psycopg2.OperationalError as e:
+                if "SSL" in str(e) or "closed unexpectedly" in str(e):
+                    if intento < 2: time.sleep(2)
+                    else: raise
+                else:
+                    raise    
     return sqlite3.connect(DB_PATH)
 
 def get_cur(conn):
