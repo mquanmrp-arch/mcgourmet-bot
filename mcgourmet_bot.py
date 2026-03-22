@@ -491,6 +491,17 @@ def chat():
     data=request.get_json(force=True)
     sid=data.get("session_id",str(uuid.uuid4()))
     msg=data.get("message","").strip()
+
+    # === TEST DB ===
+    if msg.lower()=="/testdb":
+        try:
+            conn=get_conn();cur=conn.cursor()
+            cur.execute('SELECT COUNT(*) FROM "tbl_PedBot"');count=cur.fetchone()[0]
+            cur.close();conn.close()
+            return jsonify({"session_id":sid,"response":f"✅ BD OK. Pedidos: {count}"})
+        except Exception as e:return jsonify({"session_id":sid,"response":f"❌ Error: {str(e)[:50]}"})
+    # === FIN TEST ===
+    
     return jsonify({"session_id":sid,"response":procesar(sid,msg)})
 
 @flask_app.route("/pedidos")
