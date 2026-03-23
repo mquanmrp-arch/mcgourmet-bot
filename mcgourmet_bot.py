@@ -34,17 +34,7 @@ LIMITE_PEDIDOS_DIA = 10
 # ── CONEXION BD ───────────────────────────────────────────────
 def get_conn():
     if USE_PG:
-        #return psycopg2.connect(DATABASE_URL, sslmode="require")
-        import time
-        for intento in range(3):
-            try:
-                return psycopg2.connect(DATABASE_URL, sslmode="require", connect_timeout=10)
-            except psycopg2.OperationalError as e:
-                if "SSL" in str(e) or "closed unexpectedly" in str(e):
-                    if intento < 2: time.sleep(2)
-                    else: raise
-                else:
-                    raise    
+        return psycopg2.connect(DATABASE_URL, sslmode="require")
     return sqlite3.connect(DB_PATH)
 
 def get_cur(conn):
@@ -164,32 +154,17 @@ def contar_pedidos_hoy():
     conn.close(); return count
 
 def crear_pedido(session_id, nombre, telefono, notas):
-    conn = get_conn()
-    cur = get_cur(conn)
-    ph = "%s" if USE_PG else "?"
-    
-    # INSERT simple, sin RETURNING
-    sql = f"""INSERT INTO "tbl_PedBot" 
-              (session_id, nombre_cliente, telefono, fecha_pedido, estado, notas, total) 
-              VALUES ({ph},{ph},{ph},{ph},{ph},{ph},0)"""
-    
-    try:
-        cur.execute(sql, (session_id, nombre, telefono, 
-                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                          "CONFIRMADO", notas))
-        conn.commit()
-        
-        # Obtener el último ID insertado (forma compatible)
-        cur.execute("SELECT LASTVAL()")
-        id_p = cur.fetchone()[0]
-        
-        conn.close()
-        return id_p
-    except Exception as e:
-        print(f"❌ Error en crear_pedido: {e}")
-        conn.rollback()
-        conn.close()
-        return None
+    conn = get_conn(); cur = get_cur(conn)
+    ph   = "%s" if USE_PG else "?"
+    sql  = f"INSERT INTO tbl_PedBot (session_id,nombre_cliente,telefono,fecha_pedido,estado,notas) VALUES ({ph},{ph},{ph},{ph},{ph},{ph})"
+    if USE_PG:
+        sql += " RETURNING id_pedido"
+    cur.execute(sql, (session_id, nombre, telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "CONFIRMADO", notas))
+    if USE_PG:
+        id_p = cur.fetchone()["id_pedido"]
+    else:
+        id_p = cur.lastrowid
+    conn.commit(); conn.close(); return id_p
 
 def agregar_detalle(id_pedido, id_producto, cantidad):
     conn = get_conn(); cur = get_cur(conn)
@@ -526,5 +501,5 @@ def health():
     return jsonify({"status":"ok","db":"postgresql" if USE_PG else "sqlite"})
 
 if __name__ == "__main__":
-    port=int(os.environ.get("PORT",5000))
-    flask_app.run(host="0.0.0.0",port=port,debug=False,threaded=True)
+    port=int(os.environ.get("PORT",5000)) # <-- usa el puerto del render 
+    flask_app.run(host="0.0.0.0",port=port,debug=False,threaded=True) # <-- Escucha en todas las interfaces.
