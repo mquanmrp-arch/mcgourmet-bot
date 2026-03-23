@@ -269,7 +269,9 @@ TOTAL: $ {ped['total']:,.0f}
         msg["To"]      = EMAIL_DESTINO
         msg["Subject"] = f"Nuevo Pedido #{id_pedido} - {ped['nombre_cliente']} - $ {ped['total']:,.0f}"
         msg.attach(MIMEText(cuerpo, "plain"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 587) as s: # cambio port de 465 a 587
+            s.ehlo() # liena adionada
+            s.starttls() # liena adionada
             s.login(GMAIL_USER, GMAIL_PASSWORD)
             s.sendmail(GMAIL_USER, EMAIL_DESTINO, msg.as_string())
         conn = get_conn()
