@@ -37,18 +37,19 @@ def get_conn():
         import time, psycopg2
         for intento in range(3):
             try:
-                return psycopg2.connect(
+                conn = psycopg2.connect(
                     DATABASE_URL,
                     sslmode="require",
-                    connect_timeout=5,
-                    options="-c statement_timeout=5000"
+                    connect_timeout=10,
+                    options="-c statement_timeout=10000"
                 )
+                conn.autocommit = False
+                return conn
             except psycopg2.OperationalError as e:
                 error_msg = str(e).lower()
-                if "ssl" in error_msg or "closed unexpectedly" in error_msg or "timeout" in error_msg:
-                    if intento < 2:
-                        time.sleep(1.5)
-                        continue
+                if intento < 2:
+                    time.sleep(2)
+                    continue
                 raise
     return sqlite3.connect(DB_PATH)
 
@@ -160,27 +161,37 @@ def setup_database():
 def get_catalogo():
     try:
         conn = get_conn()
-        cur = conn.cursor()
+        cur = get_cur(conn)
         cur.execute('SELECT id_producto,categoria,nombre_producto,descripcion,precio,disponible,imagen_url FROM tbl_Catalogo WHERE disponible=1 ORDER BY categoria,nombre_producto')
         rows = cur.fetchall()
         catalogo = []
         for r in rows:
-            catalogo.append({
-                'id': r[0] if not USE_PG else r['id_producto'],
-                'categoria': r[1] if not USE_PG else r['categoria'],
-                'nombre': r[2] if not USE_PG else r['nombre_producto'],
-                'descripcion': r[3] if not USE_PG else r['descripcion'],
-                'precio': float(r[4] if not USE_PG else r['precio']),
-                'disponible': bool(r[5] if not USE_PG else r['disponible']),
-                'imagen': r[6] if not USE_PG else r['imagen_url']
-            })
+            if USE_PG:
+                catalogo.append({
+                    'id_producto': r['id_producto'],
+                    'categoria': r['categoria'],
+                    'nombre_producto': r['nombre_producto'],
+                    'descripcion': r['descripcion'],
+                    'precio': float(r['precio']),
+                    'disponible': bool(r['disponible']),
+                    'imagen': r['imagen_url']
+                })
+            else:
+                catalogo.append({
+                    'id_producto': r[0],
+                    'categoria': r[1],
+                    'nombre_producto': r[2],
+                    'descripcion': r[3],
+                    'precio': float(r[4]),
+                    'disponible': bool(r[5]),
+                    'imagen': r[6]
+                })
         cur.close()
         conn.close()
         return catalogo
     except Exception as e:
-        print(f"⚠️ Error en get_catalogo: {str(e)[:60]}")
-        return []  # Retorna lista vacía en lugar de crashar
-
+        print(f"⚠️ Error en get_catalogo: {str(e)[:100]}")
+        return []
 
 def contar_pedidos_hoy():
     conn = get_conn(); cur = get_cur(conn)
