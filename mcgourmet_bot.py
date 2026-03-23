@@ -3,7 +3,7 @@ McGourmet Bot v4.0 - PostgreSQL
 LangGraph + Flask + PostgreSQL
 """
 
-import os, uuid, threading, time, smtplib
+import os, uuid, threading, time, smtplib, urllib.request, urllib.parse, json   
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -243,13 +243,18 @@ def get_pedido(id_pedido):
 
 # ── GMAIL ─────────────────────────────────────────────────────
 def enviar_email(id_pedido):
-    if not all([GMAIL_USER, GMAIL_PASSWORD, EMAIL_DESTINO]):
+    api_key       = os.environ.get("SENDGRID_API_KEY", "")
+    gmail_user    = os.environ.get("GMAIL_USER", "")
+    email_destino = os.environ.get("EMAIL_DESTINO", "")
+
+    if not all([api_key, gmail_user, email_destino]):
+        print("Error email: variables no configuradas")
         return
     try:
-        ped    = get_pedido(id_pedido)
-        items  = ped["items"]
+        ped     = get_pedido(id_pedido)
+        items   = ped["items"]
         detalle = "\n".join([f"  {it['cantidad']}x {it['nombre_producto']}  $ {it['subtotal']:,.0f}" for it in items])
-        cuerpo = f"""
+        cuerpo  = f"""
 NUEVO PEDIDO McGourmet #{id_pedido}
 {"="*40}
 Cliente  : {ped['nombre_cliente']}
@@ -264,20 +269,32 @@ DETALLE:
 TOTAL: $ {ped['total']:,.0f}
 {"="*40}
         """
-        msg = MIMEMultipart()
-        msg["From"]    = GMAIL_USER
-        msg["To"]      = EMAIL_DESTINO
-        msg["Subject"] = f"Nuevo Pedido #{id_pedido} - {ped['nombre_cliente']} - $ {ped['total']:,.0f}"
-        msg.attach(MIMEText(cuerpo, "plain"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 587) as s: # cambio port de 465 a 587
-            s.ehlo() # liena adionada
-            s.starttls() # liena adionada
-            s.login(GMAIL_USER, GMAIL_PASSWORD)
-            s.sendmail(GMAIL_USER, EMAIL_DESTINO, msg.as_string())
+        data = json.dumps({
+            "personalizations": [{"to": [{"email": email_destino}]}],
+            "from": {"email": gmail_user},
+            "subject": f"Nuevo Pedido #{id_pedido} - {ped['nombre_cliente']} - $ {ped['total']:,.0f}",
+            "content": [{"type": "text/plain", "value": cuerpo}]
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://api.sendgrid.com/v3/mail/send",
+            data=data,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(req) as resp:
+            print(f"Email enviado OK para pedido #{id_pedido} - Status: {resp.status}")
+
         conn = get_conn()
+        cur  = get_cur(conn)
         ph   = "%s" if USE_PG else "?"
-        conn.execute(f"UPDATE tbl_PedBot SET notificado=1 WHERE id_pedido={ph}", (id_pedido,))
-        conn.commit(); conn.close()
+        cur.execute(f"UPDATE tbl_PedBot SET notificado=1 WHERE id_pedido={ph}", (id_pedido,))
+        conn.commit()
+        conn.close()
+
     except Exception as e:
         print(f"Error email: {e}")
 
