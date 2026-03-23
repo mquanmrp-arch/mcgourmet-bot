@@ -45,96 +45,101 @@ def get_cur(conn):
 
 # ── SETUP BD ──────────────────────────────────────────────────
 def setup_database():
-    conn = get_conn()
-    cur  = conn.cursor()
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
 
-    if USE_PG:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_Catalogo (
-                id_producto     SERIAL PRIMARY KEY,
-                categoria       TEXT,
-                nombre_producto TEXT,
-                descripcion     TEXT,
-                precio          REAL,
-                disponible      INTEGER DEFAULT 1,
-                imagen_url      TEXT DEFAULT ''
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_PedBot (
-                id_pedido      SERIAL PRIMARY KEY,
-                session_id     TEXT,
-                nombre_cliente TEXT,
-                telefono       TEXT,
-                fecha_pedido   TEXT,
-                estado         TEXT DEFAULT 'CONFIRMADO',
-                total          REAL DEFAULT 0,
-                notas          TEXT,
-                notificado     INTEGER DEFAULT 0
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_PedBot_Detalle (
-                id_detalle      SERIAL PRIMARY KEY,
-                id_pedido       INTEGER,
-                nombre_producto TEXT,
-                cantidad        INTEGER,
-                precio_unit     REAL,
-                subtotal        REAL
-            )
-        """)
-    else:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_Catalogo (
-                id_producto     INTEGER PRIMARY KEY AUTOINCREMENT,
-                categoria       TEXT, nombre_producto TEXT,
-                descripcion     TEXT, precio REAL,
-                disponible      INTEGER DEFAULT 1, imagen_url TEXT DEFAULT ''
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_PedBot (
-                id_pedido      INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id     TEXT, nombre_cliente TEXT, telefono TEXT,
-                fecha_pedido   TEXT, estado TEXT DEFAULT 'CONFIRMADO',
-                total          REAL DEFAULT 0, notas TEXT, notificado INTEGER DEFAULT 0
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tbl_PedBot_Detalle (
-                id_detalle      INTEGER PRIMARY KEY AUTOINCREMENT,
-                id_pedido       INTEGER, nombre_producto TEXT,
-                cantidad        INTEGER, precio_unit REAL, subtotal REAL
-            )
-        """)
+        if USE_PG:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_Catalogo (
+                    id_producto     SERIAL PRIMARY KEY,
+                    categoria       TEXT,
+                    nombre_producto TEXT,
+                    descripcion     TEXT,
+                    precio          REAL,
+                    disponible      INTEGER DEFAULT 1,
+                    imagen_url      TEXT DEFAULT ''
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_PedBot (
+                    id_pedido      SERIAL PRIMARY KEY,
+                    session_id     TEXT,
+                    nombre_cliente TEXT,
+                    telefono       TEXT,
+                    fecha_pedido   TEXT,
+                    estado         TEXT DEFAULT 'CONFIRMADO',
+                    total          REAL DEFAULT 0,
+                    notas          TEXT,
+                    notificado     INTEGER DEFAULT 0
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_PedBot_Detalle (
+                    id_detalle      SERIAL PRIMARY KEY,
+                    id_pedido       INTEGER,
+                    nombre_producto TEXT,
+                    cantidad        INTEGER,
+                    precio_unit     REAL,
+                    subtotal        REAL
+                )
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_Catalogo (
+                    id_producto     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    categoria       TEXT, nombre_producto TEXT,
+                    descripcion     TEXT, precio REAL,
+                    disponible      INTEGER DEFAULT 1, imagen_url TEXT DEFAULT ''
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_PedBot (
+                    id_pedido      INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id     TEXT, nombre_cliente TEXT, telefono TEXT,
+                    fecha_pedido   TEXT, estado TEXT DEFAULT 'CONFIRMADO',
+                    total          REAL DEFAULT 0, notas TEXT, notificado INTEGER DEFAULT 0
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tbl_PedBot_Detalle (
+                    id_detalle      INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id_pedido       INTEGER, nombre_producto TEXT,
+                    cantidad        INTEGER, precio_unit REAL, subtotal REAL
+                )
+            """)
 
-    # Seed productos
-    cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
-    row = cur.fetchone()
-    count = row[0] if not USE_PG else row["count"]
-    if count == 0:
-        productos = [
-            ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
-            ("Pastas",     "La Simona",    "Sorrentinos de Calabaza con muzzarella y jengibre - Caja 12 unidades.", 15000.00),
-            ("Pastas",     "La Rufina",    "Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota) - Caja 12 unidades.", 15000.00),
-            ("Pastas",     "La Chacha",    "Sorrentinos de Osobuco con condimentos patagonicos - Caja 12 unidades.", 15000.00),
-            ("Empanadas",  "El Farito",    "Empanadas saltenas de carne, papas, huevos, cebollitas de verdeo - Caja 12 unidades.", 18000.00),
-            ("Reposteria", "Medialunas",   "Medialunas de manteca - Caja de 6 unidades.", 14000.00),
-            ("Reposteria", "Imara",        "Torta Hungara - Caja 1 unidad (rinde 6 porciones).", 9000.00),
-            ("Reposteria", "Chimpay",      "Tarta de manzana - Caja 1 unidad (rinde 6 personas).", 9000.00),
-            ("Reposteria", "Chimpaycito",  "Masas secas (alfajor de chocolate, alfajor de maicena) - Caja 4 personas.", 9000.00),
-            ("Reposteria", "La Jacinta",   "Pasta frola - Caja 1 unidad (rinde 6 personas).", 9000.00),
-        ]
-        for p in productos:
-            cur.execute(
-                "INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES (%s,%s,%s,%s,1)" if USE_PG
-                else "INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES (?,?,?,?,1)",
-                p
-            )
+        # Seed productos
+        cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
+        row = cur.fetchone()
+        count = row[0] if not USE_PG else row[0]
+        if count == 0:
+            productos = [
+                ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
+                ("Pastas",     "La Simona",    "Sorrentinos de Calabaza con muzzarella y jengibre - Caja 12 unidades.", 15000.00),
+                ("Pastas",     "La Rufina",    "Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota) - Caja 12 unidades.", 15000.00),
+                ("Pastas",     "La Chacha",    "Sorrentinos de Osobuco con condimentos patagonicos - Caja 12 unidades.", 15000.00),
+                ("Empanadas",  "El Farito",    "Empanadas saltenas de carne, papas, huevos, cebollitas de verdeo - Caja 12 unidades.", 18000.00),
+                ("Reposteria", "Medialunas",   "Medialunas de manteca - Caja de 6 unidades.", 14000.00),
+                ("Reposteria", "Imara",        "Torta Hungara - Caja 1 unidad (rinde 6 porciones).", 9000.00),
+                ("Reposteria", "Chimpay",      "Tarta de manzana - Caja 1 unidad (rinde 6 personas).", 9000.00),
+                ("Reposteria", "Chimpaycito",  "Masas secas (alfajor de chocolate, alfajor de maicena) - Caja 4 personas.", 9000.00),
+                ("Reposteria", "La Jacinta",   "Pasta frola - Caja 1 unidad (rinde 6 personas).", 9000.00),
+            ]
+            for p in productos:
+                cur.execute(
+                    "INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES (%s,%s,%s,%s,1)" if USE_PG
+                    else "INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES (?,?,?,?,1)",
+                    p
+                )
 
-    conn.commit()
-    conn.close()
-    print("BD lista.")
+        conn.commit()
+        conn.close()
+        print("✅ BD lista.")
+        
+    except Exception as e:
+        print(f"⚠️ BD no conectada al inicio: {str(e)[:60]}")
+        print("✅ BD lista.")  # ← Esto evita el loop de deploy
 
 # ── HELPERS BD ────────────────────────────────────────────────
 def get_catalogo():
