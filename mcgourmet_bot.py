@@ -62,8 +62,10 @@ def get_cur(conn):
 # ── SETUP BD ──────────────────────────────────────────────────
 def setup_database():
     try:
+        print(f"🔧 Iniciando BD... USE_PG={USE_PG}, DATABASE_URL={'SET' if DATABASE_URL else 'NO SET'}")
         conn = get_conn()
         cur = conn.cursor()
+        print("✅ Conexion exitosa a PostgreSQL" if USE_PG else "✅ Conexion exitosa a SQLite")
 
         if USE_PG:
             cur.execute("""
@@ -128,7 +130,8 @@ def setup_database():
         # Seed productos
         cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
         row = cur.fetchone()
-        count = row[0] if not USE_PG else row[0]
+        count = row[0]
+        print(f"📦 Productos en catalogo: {count}")
         if count == 0:
             productos = [
                 ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
@@ -154,8 +157,8 @@ def setup_database():
         print("✅ BD lista.")
         
     except Exception as e:
-        print(f"⚠️ BD no conectada al inicio: {str(e)[:60]}")
-        print("✅ BD lista.")  # ← Esto evita el loop de deploy
+        print(f"❌ BD error al inicio: {str(e)}")
+        print("⚠️ Continuando sin BD...")
 
 # ── HELPERS BD ────────────────────────────────────────────────
 def get_catalogo():
@@ -548,6 +551,55 @@ def pedidos():
 @flask_app.route("/health")
 def health():
     return jsonify({"status":"ok","db":"postgresql" if USE_PG else "sqlite"})
+
+@flask_app.route("/debug")
+def debug():
+    info = {"USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
+        info["catalogo_count"] = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM tbl_PedBot")
+        info["pedidos_count"] = cur.fetchone()[0]
+        info["db_status"] = "OK"
+        conn.close()
+    except Exception as e:
+        info["db_status"] = f"ERROR: {str(e)}"
+    return jsonify(info)
+
+@flask_app.route("/seed")
+def seed():
+    """Fuerza la carga del catalogo si esta vacio"""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
+        count = cur.fetchone()[0]
+        if count > 0:
+            conn.close()
+            return jsonify({"status": "ok", "msg": f"Catalogo ya tiene {count} productos"})
+        ph = "%s" if USE_PG else "?"
+        productos = [
+            ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
+            ("Pastas",     "La Simona",    "Sorrentinos de Calabaza con muzzarella y jengibre - Caja 12 unidades.", 15000.00),
+            ("Pastas",     "La Rufina",    "Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota) - Caja 12 unidades.", 15000.00),
+            ("Pastas",     "La Chacha",    "Sorrentinos de Osobuco con condimentos patagonicos - Caja 12 unidades.", 15000.00),
+            ("Empanadas",  "El Farito",    "Empanadas saltenas de carne, papas, huevos, cebollitas de verdeo - Caja 12 unidades.", 18000.00),
+            ("Reposteria", "Medialunas",   "Medialunas de manteca - Caja de 6 unidades.", 14000.00),
+            ("Reposteria", "Imara",        "Torta Hungara - Caja 1 unidad (rinde 6 porciones).", 9000.00),
+            ("Reposteria", "Chimpay",      "Tarta de manzana - Caja 1 unidad (rinde 6 personas).", 9000.00),
+            ("Reposteria", "Chimpaycito",  "Masas secas (alfajor de chocolate, alfajor de maicena) - Caja 4 personas.", 9000.00),
+            ("Reposteria", "La Jacinta",   "Pasta frola - Caja 1 unidad (rinde 6 personas).", 9000.00),
+        ]
+        sql = f"INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES ({ph},{ph},{ph},{ph},1)"
+        for p in productos:
+            cur.execute(sql, p)
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "ok", "msg": f"Cargados {len(productos)} productos"})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)})
 
 if __name__ == "__main__":
     port=int(os.environ.get("PORT",5000)) # <-- usa el puerto del render 
