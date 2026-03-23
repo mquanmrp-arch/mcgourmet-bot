@@ -34,7 +34,7 @@ LIMITE_PEDIDOS_DIA = 10
 # ── CONEXION BD ───────────────────────────────────────────────
 def get_conn():
     if USE_PG:
-        return psycopg2.connect(DATABASE_URL, sslmode="require")
+        return psycopg2.connect(DATABASE_URL, sslmode="require", connect_timeout=5)
     return sqlite3.connect(DB_PATH)
 
 def get_cur(conn):
