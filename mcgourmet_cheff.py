@@ -341,7 +341,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
   <div class="msgs" id="msgs"></div>
   <div class="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
-    <button class="qb" onclick="send('Como sirvo los sorrentinos?')">Como servirlos</button>
+    <button class="qb" onclick="send('Como sirvo el plato seleccionado?')">Como servirlos</button>
     <button class="qb" onclick="send('Que salsa sugeries?')">Salsas</button>
   </div>
   <div class="inp">
