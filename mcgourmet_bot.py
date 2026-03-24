@@ -337,7 +337,7 @@ def procesar(session_id, mensaje):
 
     if etapa == "datos_telefono":
         s["telefono"] = mensaje.strip(); s["etapa"] = "datos_notas"
-        return "Alguna aclaracion para tu pedido?\n(alergias, sin TACC, etc.)\n\nSi no tenes, escribi NO"
+        return "Alguna aclaracion para tu pedido?\n(nuestra cocina, es con TACC)\n\nSi no tenes, escribi NO"
 
     if etapa == "datos_notas":
         s["notas"] = "" if txt == "NO" else mensaje.strip()
@@ -416,8 +416,8 @@ def procesar(session_id, mensaje):
                 "VER CARRITO    - Ver tu seleccion\n"
                 "CONFIRMAR      - Finalizar pedido\n"
                 "CANCELAR       - Vaciar carrito\n"
-                "AYUDA          - Este mensaje\n\n"
-                "Para pedidos especiales:\nWeb: https://chebamrp.wixsite.com/mcgourmet\nTel: 261 5024133")
+                "AYUDA          - Este mensaje\n\n"                
+                "Para pedidos especiales:\nregresa a la Web \ny escribime un mail")
 
     if etapa == "finalizado":
         s["etapa"] = "carrito"
