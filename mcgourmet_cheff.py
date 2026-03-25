@@ -1,6 +1,6 @@
 """
 McGourmet Chef Bot v2.0
-Asistente de maridaje para clientes con pedido confirmado.
+Asistente de maridaje para clientes con pedido Confirmado.
 Flask + OpenAI GPT-4o + PostgreSQL
 
 CAMBIOS v2.0:
@@ -129,7 +129,7 @@ def registrar_consulta(id_pedido, nombre_cliente, telefono, num_consulta, pregun
 def verificar_pedido(id_pedido, telefono):
     """
     Verifica que el pedido exista, pertenezca al telefono dado
-    y haya sido confirmado el dia de hoy.
+    y haya sido Confirmado el dia de hoy.
     Retorna los datos del pedido o None.
     """
     try:
@@ -147,7 +147,7 @@ def verificar_pedido(id_pedido, telefono):
                 WHERE p.id_pedido = {ph}
                   AND p.telefono  = {ph}
                   AND p.fecha_pedido LIKE {ph}
-                  AND p.estado = 'CONFIRMADO'
+                  AND p.estado = 'Confirmado'
                 GROUP BY p.id_pedido, p.nombre_cliente, p.telefono,
                          p.fecha_pedido, p.total, p.notas""",
             (id_pedido, telefono, f"{hoy}%")
@@ -267,7 +267,7 @@ def procesar_chef(session_id, mensaje):
 
         if not pedido:
             s["etapa"] = "pedir_remito"
-            return "No encontré un pedido confirmado hoy con ese remito y teléfono. ¿Revisás los datos e intentás de nuevo?"
+            return "No encontré un pedido Confirmado hoy con ese remito y teléfono. ¿Revisás los datos e intentás de nuevo?"
 
         s["nombre_cliente"]  = pedido["nombre_cliente"]
         s["productos_pedido"] = pedido["productos"]
