@@ -86,7 +86,7 @@ def setup_database():
                     nombre_cliente TEXT,
                     telefono       TEXT,
                     fecha_pedido   TEXT,
-                    estado         TEXT DEFAULT 'CONFIRMADO',
+                    estado         TEXT DEFAULT 'Confirmado',
                     total          REAL DEFAULT 0,
                     notas          TEXT,
                     notificado     INTEGER DEFAULT 0
@@ -115,7 +115,7 @@ def setup_database():
                 CREATE TABLE IF NOT EXISTS tbl_PedBot (
                     id_pedido      INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id     TEXT, nombre_cliente TEXT, telefono TEXT,
-                    fecha_pedido   TEXT, estado TEXT DEFAULT 'CONFIRMADO',
+                    fecha_pedido   TEXT, estado TEXT DEFAULT 'Confirmado',
                     total          REAL DEFAULT 0, notas TEXT, notificado INTEGER DEFAULT 0
                 )
             """)
@@ -200,7 +200,7 @@ def contar_pedidos_hoy():
     conn = get_conn(); cur = get_cur(conn)
     hoy = datetime.now().strftime("%Y-%m-%d")
     ph  = "%s" if USE_PG else "?"
-    cur.execute(f"SELECT COUNT(*) FROM tbl_PedBot WHERE fecha_pedido LIKE {ph} AND estado='CONFIRMADO'", (f"{hoy}%",))
+    cur.execute(f"SELECT COUNT(*) FROM tbl_PedBot WHERE fecha_pedido LIKE {ph} AND estado='Confirmado'", (f"{hoy}%",))
     row = cur.fetchone()
     count = row[0] if not USE_PG else row["count"]
     conn.close(); return count
@@ -211,7 +211,7 @@ def crear_pedido(session_id, nombre, telefono, notas):
     sql  = f"INSERT INTO tbl_PedBot (session_id,nombre_cliente,telefono,fecha_pedido,estado,notas) VALUES ({ph},{ph},{ph},{ph},{ph},{ph})"
     if USE_PG:
         sql += " RETURNING id_pedido"
-    cur.execute(sql, (session_id, nombre, telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "CONFIRMADO", notas))
+    cur.execute(sql, (session_id, nombre, telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Confirmado", notas))
     if USE_PG:
         id_p = cur.fetchone()["id_pedido"]
     else:
@@ -337,13 +337,13 @@ def procesar(session_id, mensaje):
 
     if etapa == "datos_telefono":
         s["telefono"] = mensaje.strip(); s["etapa"] = "datos_notas"
-        return "Alguna aclaracion para tu pedido?\n(nuestra cocina, es con TACC)\n\nSi no tenes, escribi NO"
+        return "Alguna aclaracion para tu pedido?\n(nuestra cocina es con TACC)\n\nSi no tenes, escribi NO"
 
     if etapa == "datos_notas":
         s["notas"] = "" if txt == "NO" else mensaje.strip()
         if contar_pedidos_hoy() >= LIMITE_PEDIDOS_DIA:
             s["etapa"] = "carrito"; s["carrito"] = []; s["total"] = 0.0
-            return "Lo sentimos, alcanzamos el limite de pedidos por hoy.\n\nPara pedidos especiales visita:\nhttps://chebamrp.wixsite.com/mcgourmet\no llamanos al 261 5024133"
+            return "Lo sentimos, alcanzamos el limite de pedidos por hoy.\n\nPara pedidos especiales regresa:\na la web y enviame un mail"
         id_p = crear_pedido(session_id, s["nombre"], s["telefono"], s["notas"])
         for item in s["carrito"]:
             agregar_detalle(id_p, item["id_producto"], item["cantidad"])
@@ -374,7 +374,7 @@ def procesar(session_id, mensaje):
         try: id_prod=int(partes[1]); cantidad=int(partes[2]) if len(partes)>2 else 1
         except: return "Formato: AGREGAR [numero] [cantidad]\nEj: AGREGAR 1 2"
         if cantidad > LIMITE_UNIDADES:
-            return f"Lo sentimos, el maximo por producto es {LIMITE_UNIDADES} unidades.\n\nPara pedidos mayores visita:\nhttps://chebamrp.wixsite.com/mcgourmet\no llamanos al 261 5024133"
+            return f"Lo sentimos, el maximo por producto es {LIMITE_UNIDADES} unidades.\n\nPara pedidos especiales regresa:\na la web y enviame un mail"
         idx  = {p["id_producto"]:p for p in get_catalogo()}
         prod = idx.get(id_prod)
         if not prod: return f"No encontre el producto #{id_prod}. Revisa el menu."
@@ -382,7 +382,7 @@ def procesar(session_id, mensaje):
         existe  = next((i for i,x in enumerate(carrito) if x["id_producto"]==id_prod),None)
         cant_actual = carrito[existe]["cantidad"] if existe is not None else 0
         if cant_actual + cantidad > LIMITE_UNIDADES:
-            return f"Ya tenes {cant_actual} unidad(es) de {prod['nombre_producto']}.\nEl maximo es {LIMITE_UNIDADES} unidades.\n\nPara pedidos mayores visita:\nhttps://chebamrp.wixsite.com/mcgourmet\no llamanos al 261 5024133"
+            return f"Ya tenes {cant_actual} unidad(es) de {prod['nombre_producto']}.\nEl maximo es {LIMITE_UNIDADES} unidades.\n\nPara pedidos especiales regresa:\na la web y enviame un mail" 
         if existe is not None:
             carrito[existe]["cantidad"]+=cantidad; carrito[existe]["subtotal"]=carrito[existe]["cantidad"]*prod["precio"]
         else:
@@ -416,7 +416,8 @@ def procesar(session_id, mensaje):
                 "VER CARRITO    - Ver tu seleccion\n"
                 "CONFIRMAR      - Finalizar pedido\n"
                 "CANCELAR       - Vaciar carrito\n"
-                "AYUDA          - Este mensaje\n\n"                
+                "AYUDA          - Este mensaje\n\n"
+                #"Para pedidos especiales:\nWeb: https://chebamrp.wixsite.com/mcgourmet\nTel: 261 5024133")
                 "Para pedidos especiales:\nregresa a la Web \ny escribime un mail")
 
     if etapa == "finalizado":
