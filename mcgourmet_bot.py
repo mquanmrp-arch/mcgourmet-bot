@@ -337,7 +337,7 @@ def procesar(session_id, mensaje):
 
     if etapa == "datos_telefono":
         s["telefono"] = mensaje.strip(); s["etapa"] = "datos_notas"
-        return "Alguna aclaracion para tu pedido?\n(nuestra cocina es con TACC)\n\nSi no tenes, escribi NO"
+        return "Alguna aclaracion para tu pedido?\n(próximamente cocina es sin TACC)\n\nSi no tenes, escribi NO"
 
     if etapa == "datos_notas":
         s["notas"] = "" if txt == "NO" else mensaje.strip()

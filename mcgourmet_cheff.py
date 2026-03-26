@@ -170,6 +170,7 @@ para los productos artesanales de McGourmet. Destaca los condimentos del norte a
 Así también, los condimentos ahumados patagónicos, los cuales le dan el toque McGourmet a las pastas.
 Para el maridaje, destaca los vinos torrontés y tannat de Cafayate, malbec, cabernet franc, merlot de Mendoza,
 syrah de San Juan, pinot noir de Río Negro o Neuquén, petit verdot de San Juan. 
+Para panificados, el maridaje solo con variedades de cafe o infusion.
 
 Productos del catálogo:
 - La Eulogia: Sorrentinos de espinaca con queso parmesano
