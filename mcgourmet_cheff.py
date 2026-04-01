@@ -125,6 +125,46 @@ def registrar_consulta(id_pedido, nombre_cliente, telefono, num_consulta, pregun
     except Exception as e:
         print(f"Error registrar_consulta: {e}")
 
+# ── Registrar feedback ────────────────────────────────────────
+def registrar_feedback(id_consulta, feedback):
+    """
+    Actualiza el feedback de una consulta en tbl_cheffmaridaje.
+    feedback: 'accepted' | 'rejected'
+    """
+    try:
+        conn = get_conn()
+        cur  = get_cur(conn)
+        ph   = "%s" if USE_PG else "?"
+        cur.execute(
+            f"UPDATE tbl_cheffmaridaje "
+            f"SET feedback = {ph}, fecha_feedback = {ph} "
+            f"WHERE id_consulta = {ph}",
+            (feedback, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id_consulta)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error registrar_feedback: {e}")
+
+def get_ultimo_id_consulta(id_pedido, num_consulta):
+    """Obtiene el id_consulta de la última consulta registrada."""
+    try:
+        conn = get_conn()
+        cur  = get_cur(conn)
+        ph   = "%s" if USE_PG else "?"
+        cur.execute(
+            f"SELECT id_consulta FROM tbl_cheffmaridaje "
+            f"WHERE id_pedido = {ph} AND num_consulta = {ph} "
+            f"ORDER BY id_consulta DESC LIMIT 1",
+            (id_pedido, num_consulta)
+        )
+        row = cur.fetchone()
+        conn.close()
+        return dict(row)["id_consulta"] if row else None
+    except Exception as e:
+        print(f"Error get_ultimo_id_consulta: {e}")
+        return None
+
 # ── Verificar pedido ───────────────────────────────────────────
 def verificar_pedido(id_pedido, telefono):
     """
@@ -240,7 +280,10 @@ def procesar_chef(session_id, mensaje):
             "productos_pedido": None,
             "historial": [],
             # CAMBIO v2.0: contador de consultas en Python, no en el prompt
-            "consultas_realizadas": 0
+            "consultas_realizadas": 0,
+            # FEEDBACK: id de la última consulta registrada
+            "ultimo_id_consulta": None,
+            "esperando_feedback": False,
         }
 
     s     = sesiones[session_id]
@@ -281,6 +324,24 @@ def procesar_chef(session_id, mensaje):
     # Etapa 4: chat libre con el Chef
     if etapa == "chat":
 
+        # ── Capturar feedback si el bot está esperando respuesta ──────────
+        if s["esperando_feedback"]:
+            respuesta_lower = txt.strip().lower()
+            if respuesta_lower in ("si", "sí", "s", "👍", "yes"):
+                if s["ultimo_id_consulta"]:
+                    registrar_feedback(s["ultimo_id_consulta"], "accepted")
+                s["esperando_feedback"] = False
+                return "¡Gracias por tu opinión! Me alegra haber sido útil. 🍽️ ¡Buen provecho!"
+            elif respuesta_lower in ("no", "n", "👎"):
+                if s["ultimo_id_consulta"]:
+                    registrar_feedback(s["ultimo_id_consulta"], "rejected")
+                s["esperando_feedback"] = False
+                return "Gracias por tu opinión, la tendremos en cuenta para mejorar. 🙏 ¡Buen provecho!"
+            else:
+                # Si no entiende la respuesta, lo ignora y sigue
+                registrar_feedback(s["ultimo_id_consulta"], "ignored") if s["ultimo_id_consulta"] else None
+                s["esperando_feedback"] = False
+
         # ── CAMBIO v2.0: Control del límite en Python, ANTES de llamar a la API ──
         if s["consultas_realizadas"] >= MAX_CONSULTAS:
             return "Ya alcanzaste el máximo de 3 consultas. Para continuar, iniciá una nueva compra. 🙏"
@@ -309,6 +370,11 @@ def procesar_chef(session_id, mensaje):
             s["productos_pedido"]
         )
 
+        # Guardar id de la consulta recién registrada para el feedback
+        s["ultimo_id_consulta"] = get_ultimo_id_consulta(
+            s["id_pedido"], s["consultas_realizadas"]
+        )
+
         # Limitar historial para no acumular tokens en conversaciones largas
         max_msgs = MAX_HISTORIAL_TURNOS * 2  # cada turno = 1 user + 1 assistant
         if len(s["historial"]) > max_msgs:
@@ -317,10 +383,16 @@ def procesar_chef(session_id, mensaje):
         # Avisar al cliente cuántas consultas le quedan
         if restantes == 0:
             respuesta += "\n\n_Esta fue tu última consulta disponible. ¡Buen provecho!_ 🍽️"
+            respuesta += "\n\n¿Te fue útil la sugerencia del Chef? Respondé **SI** o **NO**"
+            s["esperando_feedback"] = True
         elif restantes == 1:
             respuesta += f"\n\n_(Te queda 1 consulta disponible)_"
+            respuesta += "\n\n¿Te fue útil esta sugerencia? Respondé **SI** o **NO**"
+            s["esperando_feedback"] = True
         else:
             respuesta += f"\n\n_(Te quedan {restantes} consultas disponibles)_"
+            respuesta += "\n\n¿Te fue útil esta sugerencia? Respondé **SI** o **NO**"
+            s["esperando_feedback"] = True
 
         return respuesta
 
