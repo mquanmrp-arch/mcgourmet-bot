@@ -1,5 +1,5 @@
 """
-McGourmet Chef Bot v2.0
+McGourmet Chef Bot v2.1
 Asistente de maridaje para clientes con pedido Confirmado.
 Flask + OpenAI GPT-4o + PostgreSQL
 
@@ -10,6 +10,11 @@ CAMBIOS v2.0:
 - Respuesta incluye contador de consultas restantes
 - SYSTEM_PROMPT simplificado (sin lógica de contador)
 - Historial limitado a MAX_HISTORIAL_TURNOS para controlar tokens
+
+CAMBIOS v2.1:
+- Flujo de feedback: SI / NO después de cada sugerencia
+- Flujo de comentario libre opcional tras el feedback
+- Nuevas columnas en tbl_cheffmaridaje: feedback, fecha_feedback, comentario
 """
 
 import os, uuid, json
@@ -145,6 +150,26 @@ def registrar_feedback(id_consulta, feedback):
         conn.close()
     except Exception as e:
         print(f"Error registrar_feedback: {e}")
+
+
+def registrar_comentario(id_consulta, comentario):
+    """
+    Guarda el comentario libre del cliente en tbl_cheffmaridaje.
+    """
+    try:
+        conn = get_conn()
+        cur  = get_cur(conn)
+        ph   = "%s" if USE_PG else "?"
+        cur.execute(
+            f"UPDATE tbl_cheffmaridaje "
+            f"SET comentario = {ph} "
+            f"WHERE id_consulta = {ph}",
+            (comentario, id_consulta)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error registrar_comentario: {e}")
 
 def get_ultimo_id_consulta(id_pedido, num_consulta):
     """Obtiene el id_consulta de la última consulta registrada."""
@@ -284,6 +309,7 @@ def procesar_chef(session_id, mensaje):
             # FEEDBACK: id de la última consulta registrada
             "ultimo_id_consulta": None,
             "esperando_feedback": False,
+            "esperando_comentario": False,
         }
 
     s     = sesiones[session_id]
@@ -324,22 +350,38 @@ def procesar_chef(session_id, mensaje):
     # Etapa 4: chat libre con el Chef
     if etapa == "chat":
 
-        # ── Capturar feedback si el bot está esperando respuesta ──────────
+        # ── Capturar comentario libre si el bot está esperando ───────────
+        if s["esperando_comentario"]:
+            txt_lower = txt.strip().lower()
+            if txt_lower not in ("omitir", "no", "n", "skip"):
+                # Guardar comentario si no es una palabra de omisión
+                if s["ultimo_id_consulta"]:
+                    registrar_comentario(s["ultimo_id_consulta"], txt.strip())
+                s["esperando_comentario"] = False
+                return "¡Gracias por tu comentario! Lo tendremos en cuenta para seguir mejorando. 🙏 ¡Buen provecho!"
+            else:
+                s["esperando_comentario"] = False
+                return "¡Perfecto! ¡Buen provecho! 🍽️"
+
+        # ── Capturar feedback SI/NO ───────────────────────────────────────
         if s["esperando_feedback"]:
             respuesta_lower = txt.strip().lower()
             if respuesta_lower in ("si", "sí", "s", "👍", "yes"):
                 if s["ultimo_id_consulta"]:
                     registrar_feedback(s["ultimo_id_consulta"], "accepted")
-                s["esperando_feedback"] = False
-                return "¡Gracias por tu opinión! Me alegra haber sido útil. 🍽️ ¡Buen provecho!"
+                s["esperando_feedback"]   = False
+                s["esperando_comentario"] = True
+                return "¡Gracias! 😊 ¿Querés dejarnos un breve comentario sobre el servicio? (o escribí OMITIR para saltar)"
             elif respuesta_lower in ("no", "n", "👎"):
                 if s["ultimo_id_consulta"]:
                     registrar_feedback(s["ultimo_id_consulta"], "rejected")
-                s["esperando_feedback"] = False
-                return "Gracias por tu opinión, la tendremos en cuenta para mejorar. 🙏 ¡Buen provecho!"
+                s["esperando_feedback"]   = False
+                s["esperando_comentario"] = True
+                return "Gracias por tu opinión. ¿Querés contarnos en qué podemos mejorar? (o escribí OMITIR para saltar)"
             else:
-                # Si no entiende la respuesta, lo ignora y sigue
-                registrar_feedback(s["ultimo_id_consulta"], "ignored") if s["ultimo_id_consulta"] else None
+                # No entiende la respuesta → ignored y sigue
+                if s["ultimo_id_consulta"]:
+                    registrar_feedback(s["ultimo_id_consulta"], "ignored")
                 s["esperando_feedback"] = False
 
         # ── CAMBIO v2.0: Control del límite en Python, ANTES de llamar a la API ──
