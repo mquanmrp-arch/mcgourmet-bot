@@ -161,7 +161,8 @@ def get_catalogo():
     try:
         conn = get_conn()
         cur = get_cur(conn)
-        cur.execute('SELECT id_producto,categoria,nombre_producto,descripcion,precio,disponible,imagen_url FROM tbl_Catalogo WHERE disponible=1 ORDER BY categoria,nombre_producto')
+        #cur.execute('SELECT id_producto,categoria,nombre_producto,descripcion,precio,disponible,imagen_url FROM tbl_Catalogo WHERE disponible=1 ORDER BY categoria,nombre_producto')
+        cur.execute('SELECT id_producto,categoria,nombre_producto,descripcion,precio,disponible,imagen_url FROM tbl_Catalogo WHERE disponible=1 ORDER BY id_producto')
         rows = cur.fetchall()
         catalogo = []
         for r in rows:
