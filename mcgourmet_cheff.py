@@ -238,16 +238,12 @@ syrah de San Juan, pinot noir de Río Negro o Neuquén, petit verdot de San Juan
 Para panificados, el maridaje solo con variedades de cafe o infusion. Salvo medialunas, pueden ir con torrontes cosecha tardío o espumante demisec.
 
 Productos del catálogo:
-- La Eulogia: Sorrentinos de espinaca con queso parmesano
-- La Simona: Sorrentinos de Calabaza con muzzarella y jengibre
-- La Rufina: Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota)
-- La Chacha: Sorrentinos de Osobuco con condimentos patagónicos
-- El Farito: Empanadas salteñas de carne, papas, huevos, cebollitas de verdeo
-- Medialunas: Medialunas de manteca
-- Imara: Torta Húngara
-- Chimpay: Tarta de manzana
-- Chimpaycito: Masas secas (alfajor de chocolate, alfajor de maicena)
-- La Jacinta: Pasta frola
+- La Eulogia: Alfajores de chocolate con relleno de chocotorta - Caja 12 unidades
+- La Simona: Alfajores de chocolate con relleno de almendras - Caja 12 unidades
+- La Rufina: Alfajores bañados en chocolate, de maicena - Caja 12 unidades
+- El Farito: Variedades de masas gourmet - Caja 1/2 kg
+- La Jacinta: Tarta con crema de limón - Caja 1 unidad
+- Imara: Variedad de masas gourmet - Caja 6 porciones
 
 Reglas:
 - Respondé SIEMPRE en español, con tono cercano argentino pero profesional.

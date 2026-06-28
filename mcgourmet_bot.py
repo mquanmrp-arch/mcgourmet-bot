@@ -134,16 +134,12 @@ def setup_database():
         print(f"📦 Productos en catalogo: {count}")
         if count == 0:
             productos = [
-                ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
-                ("Pastas",     "La Simona",    "Sorrentinos de Calabaza con muzzarella y jengibre - Caja 12 unidades.", 15000.00),
-                ("Pastas",     "La Rufina",    "Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota) - Caja 12 unidades.", 15000.00),
-                ("Pastas",     "La Chacha",    "Sorrentinos de Osobuco con condimentos patagonicos - Caja 12 unidades.", 15000.00),
-                ("Empanadas",  "El Farito",    "Empanadas saltenas de carne, papas, huevos, cebollitas de verdeo - Caja 12 unidades.", 18000.00),
-                ("Reposteria", "Medialunas",   "Medialunas de manteca - Caja de 6 unidades.", 14000.00),
-                ("Reposteria", "Imara",        "Torta Hungara - Caja 1 unidad (rinde 6 porciones).", 9000.00),
-                ("Reposteria", "Chimpay",      "Tarta de manzana - Caja 1 unidad (rinde 6 personas).", 9000.00),
-                ("Reposteria", "Chimpaycito",  "Masas secas (alfajor de chocolate, alfajor de maicena) - Caja 4 personas.", 9000.00),
-                ("Reposteria", "La Jacinta",   "Pasta frola - Caja 1 unidad (rinde 6 personas).", 9000.00),
+                ("Pasteleria", "La Eulogia",  "Alfajores de chocolate con relleno de chocotorta - Caja 12 unidades.",        15000.00),
+                ("Pasteleria", "La Simona",   "Alfajores de chocolate con relleno de almendras - Caja 12 unidades.",          15000.00),
+                ("Pasteleria", "La Rufina",   "Alfajores banados en chocolate, de maicena - Caja 12 unidades.",               15000.00),
+                ("Pasteleria", "El Farito",   "Variedades de masas gourmet - Caja 1/2 kg.",                                   18000.00),
+                ("Pasteleria", "La Jacinta",  "Tarta con crema de limon - Caja 1 unidad.",                                    12000.00),
+                ("Pasteleria", "Imara",       "Variedad de masas gourmet - Caja 6 porciones.",                                12000.00),
             ]
             for p in productos:
                 cur.execute(
@@ -601,16 +597,12 @@ def seed():
             return jsonify({"status": "ok", "msg": f"Catalogo ya tiene {count} productos"})
         ph = "%s" if USE_PG else "?"
         productos = [
-            ("Pastas",     "La Eulogia",   "Sorrentinos de espinaca con queso parmesano - Caja 12 unidades.",    15000.00),
-            ("Pastas",     "La Simona",    "Sorrentinos de Calabaza con muzzarella y jengibre - Caja 12 unidades.", 15000.00),
-            ("Pastas",     "La Rufina",    "Sorrentinos 4 Quesos (muzzarella, port salud, parmesano, ricota) - Caja 12 unidades.", 15000.00),
-            ("Pastas",     "La Chacha",    "Sorrentinos de Osobuco con condimentos patagonicos - Caja 12 unidades.", 15000.00),
-            ("Empanadas",  "El Farito",    "Empanadas saltenas de carne, papas, huevos, cebollitas de verdeo - Caja 12 unidades.", 18000.00),
-            ("Reposteria", "Medialunas",   "Medialunas de manteca - Caja de 6 unidades.", 14000.00),
-            ("Reposteria", "Imara",        "Torta Hungara - Caja 1 unidad (rinde 6 porciones).", 9000.00),
-            ("Reposteria", "Chimpay",      "Tarta de manzana - Caja 1 unidad (rinde 6 personas).", 9000.00),
-            ("Reposteria", "Chimpaycito",  "Masas secas (alfajor de chocolate, alfajor de maicena) - Caja 4 personas.", 9000.00),
-            ("Reposteria", "La Jacinta",   "Pasta frola - Caja 1 unidad (rinde 6 personas).", 9000.00),
+            ("Pasteleria", "La Eulogia",  "Alfajores de chocolate con relleno de chocotorta - Caja 12 unidades.",        15000.00),
+            ("Pasteleria", "La Simona",   "Alfajores de chocolate con relleno de almendras - Caja 12 unidades.",          15000.00),
+            ("Pasteleria", "La Rufina",   "Alfajores banados en chocolate, de maicena - Caja 12 unidades.",               15000.00),
+            ("Pasteleria", "El Farito",   "Variedades de masas gourmet - Caja 1/2 kg.",                                   18000.00),
+            ("Pasteleria", "La Jacinta",  "Tarta con crema de limon - Caja 1 unidad.",                                    12000.00),
+            ("Pasteleria", "Imara",       "Variedad de masas gourmet - Caja 6 porciones.",                                12000.00),
         ]
         sql = f"INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES ({ph},{ph},{ph},{ph},1)"
         for p in productos:
