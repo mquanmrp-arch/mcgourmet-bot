@@ -118,9 +118,10 @@ def contar_consultas_bd(id_pedido, telefono):
         )
         row = cur.fetchone()
         conn.close()
+        # RealDictCursor devuelve dict con clave 'count'
         if USE_PG:
-            return row["count"]
-        return row[0]
+            return int(row.get("count", 0))
+        return int(row[0])
     except Exception as e:
         print(f"Error contar_consultas_bd: {e}")
         return 0
@@ -536,7 +537,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
   <div class="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
     <button class="qb" onclick="send('Como sirvo el plato seleccionado?')">Como servirlos</button>
-    <button class="qb" onclick="send('Que salsa sugeries?')">Salsas</button>
+
   </div>
   <div class="inp">
     <input id="inp" type="text" placeholder="Preguntale al Chef..." autocomplete="off" onkeydown="if(event.key==='Enter')send()">
