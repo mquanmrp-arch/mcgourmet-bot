@@ -104,6 +104,27 @@ def setup_database():
     except Exception as e:
         print(f"❌ Error setup BD Chef: {e}")
 
+# ── Contar consultas reales en BD ─────────────────────────────
+def contar_consultas_bd(id_pedido, telefono):
+    """Cuenta cuantas consultas reales hizo este cliente hoy en la BD."""
+    try:
+        conn = get_conn()
+        cur  = get_cur(conn)
+        ph   = "%s" if USE_PG else "?"
+        hoy  = datetime.now().strftime("%Y-%m-%d")
+        cur.execute(
+            f"SELECT COUNT(*) FROM tbl_CheffMaridaje WHERE id_pedido={ph} AND telefono={ph} AND fecha_consulta LIKE {ph}",
+            (id_pedido, telefono, f"{hoy}%")
+        )
+        row = cur.fetchone()
+        conn.close()
+        if USE_PG:
+            return row["count"]
+        return row[0]
+    except Exception as e:
+        print(f"Error contar_consultas_bd: {e}")
+        return 0
+
 # ── Registrar consulta ─────────────────────────────────────────
 def registrar_consulta(id_pedido, nombre_cliente, telefono, num_consulta, pregunta, respuesta, productos_pedido):
     try:
@@ -256,6 +277,12 @@ Reglas:
 def consultar_chef(historial, nombre_cliente, productos_pedido):
     """Llama a OpenAI GPT-4o con el historial de la conversacion."""
     import urllib.request
+    
+    # Leer en cada llamada para asegurar valor actualizado en Render
+    openai_key = os.environ.get("OPENAI_API_KEY", OPENAI_API_KEY)
+    if not openai_key:
+        print("Error OpenAI: OPENAI_API_KEY no configurada")
+        return "Perdoná, tuve un problema de configuración. ¡Intentá de nuevo en un momento!"
 
     system = SYSTEM_PROMPT
     if nombre_cliente and productos_pedido:
@@ -275,7 +302,7 @@ def consultar_chef(historial, nombre_cliente, productos_pedido):
         "https://api.openai.com/v1/chat/completions",
         data=data,
         headers={
-            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Authorization": f"Bearer {openai_key}",
             "Content-Type": "application/json"
         },
         method="POST"
