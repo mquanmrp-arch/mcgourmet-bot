@@ -109,7 +109,11 @@ def contar_consultas_bd(id_pedido, telefono):
     """Cuenta cuantas consultas reales hizo este cliente hoy en la BD."""
     try:
         conn = get_conn()
-        cur  = get_cur(conn)
+        # Usar cursor simple (no RealDictCursor) para COUNT(*)
+        if USE_PG:
+            cur = conn.cursor()
+        else:
+            cur = conn.cursor()
         ph   = "%s" if USE_PG else "?"
         hoy  = datetime.now().strftime("%Y-%m-%d")
         cur.execute(
@@ -118,10 +122,9 @@ def contar_consultas_bd(id_pedido, telefono):
         )
         row = cur.fetchone()
         conn.close()
-        # RealDictCursor devuelve dict con clave 'count'
-        if USE_PG:
-            return int(row.get("count", 0))
-        return int(row[0])
+        count = int(row[0])
+        print(f"Consultas BD para remito {id_pedido} / tel {telefono}: {count}")
+        return count
     except Exception as e:
         print(f"Error contar_consultas_bd: {e}")
         return 0
