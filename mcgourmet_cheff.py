@@ -376,13 +376,21 @@ def procesar_chef(session_id, mensaje):
             s["etapa"] = "pedir_remito"
             return "No encontré un pedido Confirmado hoy con ese remito y teléfono. ¿Revisás los datos e intentás de nuevo?"
 
-        s["nombre_cliente"]  = pedido["nombre_cliente"]
-        s["productos_pedido"] = pedido["productos"]
-        s["etapa"]           = "chat"
+        s["nombre_cliente"]   = pedido["nombre_cliente"]
+        s["productos_pedido"]  = pedido["productos"]
+        s["etapa"]            = "chat"
+        # Cargar contador real desde BD para persistir entre sesiones
+        consultas_hechas = contar_consultas_bd(s["id_pedido"], s["telefono"])
+        s["consultas_realizadas"] = consultas_hechas
+        restantes = MAX_CONSULTAS - consultas_hechas
+        if restantes <= 0:
+            s["etapa"] = "pedir_remito"
+            return (f"Hola {pedido['nombre_cliente']}! Ya usaste tus {MAX_CONSULTAS} consultas disponibles para este pedido. "
+                    f"Para nuevas consultas, realizá una nueva compra. 🙏")
         return (f"¡Bienvenido/a {pedido['nombre_cliente']}! 🎉\n\n"
                 f"Veo que hoy pediste: {pedido['productos']}.\n\n"
-                f"Tenés {MAX_CONSULTAS} consultas disponibles con el Chef. "
-                f"¿En qué te puedo asesorar? Preguntame sobre maridajes, salsas, guarniciones o cómo servir tus platos.")
+                f"Tenés {restantes} consulta(s) disponible(s) con el Chef. "
+                f"¿En qué te puedo asesorar? Preguntame sobre maridajes o bebidas para tus productos.")
 
     # Etapa 4: chat libre con el Chef
     if etapa == "chat":
