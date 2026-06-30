@@ -236,11 +236,10 @@ def verificar_pedido(id_pedido, telefono):
                 JOIN tbl_PedBot_Detalle d ON p.id_pedido = d.id_pedido
                 WHERE p.id_pedido = {ph}
                   AND p.telefono  = {ph}
-                  AND p.fecha_pedido LIKE {ph}
                   AND p.estado = 'Pagado'
                 GROUP BY p.id_pedido, p.nombre_cliente, p.telefono,
                          p.fecha_pedido, p.total, p.notas""",
-            (id_pedido, telefono, f"{hoy}%")
+            (id_pedido, telefono)
         )
         row = cur.fetchone()
         conn.close()
