@@ -26,7 +26,7 @@ from flask_cors import CORS
 DATABASE_URL   = os.environ.get("DATABASE_URL", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-MAX_CONSULTAS       = 3   # Límite de preguntas al chef por sesión
+MAX_CONSULTAS       = 2   # Límite de preguntas al chef por sesión
 MAX_HISTORIAL_TURNOS = 6  # Máximo de turnos (pares user/assistant) a enviar a la API
 
 if DATABASE_URL:
@@ -237,7 +237,7 @@ def verificar_pedido(id_pedido, telefono):
                 WHERE p.id_pedido = {ph}
                   AND p.telefono  = {ph}
                   AND p.fecha_pedido LIKE {ph}
-                  AND p.estado = 'Confirmado'
+                  AND p.estado = 'Pagado'
                 GROUP BY p.id_pedido, p.nombre_cliente, p.telefono,
                          p.fecha_pedido, p.total, p.notas""",
             (id_pedido, telefono, f"{hoy}%")
@@ -374,7 +374,7 @@ def procesar_chef(session_id, mensaje):
 
         if not pedido:
             s["etapa"] = "pedir_remito"
-            return "No encontré un pedido Confirmado hoy con ese remito y teléfono. ¿Revisás los datos e intentás de nuevo?"
+            return "No encontré un pedido Pagado hoy con ese remito y teléfono. Verificá que tu pago haya sido confirmado por McGourmet, o revisá los datos e intentá de nuevo."
 
         s["nombre_cliente"]   = pedido["nombre_cliente"]
         s["productos_pedido"]  = pedido["productos"]
@@ -431,7 +431,7 @@ def procesar_chef(session_id, mensaje):
 
         # ── CAMBIO v2.0: Control del límite en Python, ANTES de llamar a la API ──
         if s["consultas_realizadas"] >= MAX_CONSULTAS:
-            return "Ya alcanzaste el máximo de 3 consultas. Para continuar, iniciá una nueva compra. 🙏"
+            return f"Ya alcanzaste el máximo de {MAX_CONSULTAS} consultas. Para continuar, iniciá una nueva compra. 🙏"
 
         # Llamada a la API solo si tiene consultas disponibles
         s["historial"].append({"role": "user", "content": txt})
