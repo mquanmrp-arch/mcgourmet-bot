@@ -1,6 +1,7 @@
 """
 McGourmet Bot v4.0 - PostgreSQL
 LangGraph + Flask + PostgreSQL
+version 3 - date: 01/07/2026
 """
 
 import os, uuid, threading, time, smtplib, urllib.request, urllib.parse, json   
@@ -240,11 +241,10 @@ def get_pedido(id_pedido):
 
 # ── GMAIL ─────────────────────────────────────────────────────
 def enviar_email(id_pedido):
-    api_key       = os.environ.get("SENDGRID_API_KEY", "")
-    gmail_user    = os.environ.get("GMAIL_USER", "")
+    api_key       = os.environ.get("RESEND_API_KEY", "")
     email_destino = os.environ.get("EMAIL_DESTINO", "")
 
-    if not all([api_key, gmail_user, email_destino]):
+    if not all([api_key, email_destino]):
         print("Error email: variables no configuradas")
         return
     try:
@@ -267,14 +267,14 @@ TOTAL: $ {ped['total']:,.0f}
 {"="*40}
         """
         data = json.dumps({
-            "personalizations": [{"to": [{"email": email_destino}]}],
-            "from": {"email": gmail_user},
+            "from": "McGourmet <onboarding@resend.dev>",
+            "to": [email_destino],
             "subject": f"Nuevo Pedido #{id_pedido} - {ped['nombre_cliente']} - $ {ped['total']:,.0f}",
-            "content": [{"type": "text/plain", "value": cuerpo}]
+            "text": cuerpo
         }).encode("utf-8")
 
         req = urllib.request.Request(
-            "https://api.sendgrid.com/v3/mail/send",
+            "https://api.resend.com/emails",
             data=data,
             headers={
                 "Authorization": f"Bearer {api_key}",
