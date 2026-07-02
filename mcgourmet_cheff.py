@@ -226,7 +226,6 @@ def verificar_pedido(id_pedido, telefono):
         conn = get_conn()
         cur  = get_cur(conn)
         ph   = "%s" if USE_PG else "?"
-        hoy  = datetime.now().strftime("%Y-%m-%d")
 
         cur.execute(
             f"""SELECT p.id_pedido, p.nombre_cliente, p.telefono,
@@ -373,7 +372,7 @@ def procesar_chef(session_id, mensaje):
 
         if not pedido:
             s["etapa"] = "pedir_remito"
-            return "No encontré un pedido Pagado hoy con ese remito y teléfono. Verificá que tu pago haya sido confirmado por McGourmet, o revisá los datos e intentá de nuevo."
+            return "No encontré un pedido Pagado con ese remito y teléfono. Verificá que tu pago haya sido confirmado por McGourmet, o revisá los datos e intentá de nuevo."
 
         s["nombre_cliente"]   = pedido["nombre_cliente"]
         s["productos_pedido"]  = pedido["productos"]
