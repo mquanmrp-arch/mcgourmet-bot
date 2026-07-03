@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "te": "Cascarilla de Cacao Orgánica & Canela",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Cascarilla de cacao orgánica y canela.",
+    "contenido": "Al contener teobromina (el estimulante natural del cacao), aporta una dosis de energía limpia, suave y sostenida, sin los picos de ansiedad de la cafeína. Es el aliado perfecto para las tardes o para disfrutar después de comer.",
+    "momentos": "Combina la calidez y dulzura de la cascarilla de cacao más pura con las notas especiadas de la canela. Aroma chocolatoso e irresistible, ideal para una pausa consciente en cualquier momento del día.",
+    "perfil": "cálido, chocolatoso, especiado, sin cafeína",
+    "maridaje_productos": ["La Eulogia", "La Simona", "La Rufina", "El Farito", "Imara"],
+    "notas_maridaje": "Su perfil chocolatoso y especiado complementa naturalmente los alfajores de chocolate y las masas gourmet. La teobromina del cacao refuerza el sabor sin competir con el dulce de leche."
+  },
+  {
+    "id": 2,
+    "te": "Té Negro Orgánico & Frutos Rojos",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té negro orgánico, hibisco, arándano orgánico, cassis orgánico, frutillas orgánicas y esencia natural de frutos rojos.",
+    "contenido": "Equilibra el carácter robusto del té negro orgánico con la vibrante acidez del hibisco y la dulzura silvestre de arándanos, cassis y frutillas orgánicas. Intensamente aromático, con notas frutales profundas.",
+    "momentos": "Ideal para un momento estimulante y lleno de energía a la mañana o durante la tarde.",
+    "perfil": "robusto, frutal, ácido, energizante, con cafeína",
+    "maridaje_productos": ["La Simona", "La Rufina", "La Jacinta"],
+    "notas_maridaje": "La acidez de los frutos rojos limpia el paladar después de los alfajores de maicena y contrasta elegantemente con la tarta de limón."
+  },
+  {
+    "id": 3,
+    "te": "Té Verde Orgánico",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té verde orgánico.",
+    "contenido": "Perfil limpio, notas herbales sutiles y un dejo delicadamente dulce y vegetal. Infusión ligera, refrescante y de color dorado brillante.",
+    "momentos": "Ideal a media mañana o después de los almuerzos. Propiedades antioxidantes que revitalizan el cuerpo.",
+    "perfil": "ligero, herbal, refrescante, antioxidante, con cafeína moderada",
+    "maridaje_productos": ["La Jacinta", "El Farito", "Imara"],
+    "notas_maridaje": "Su ligereza no compite con las masas delicadas. Limpia el paladar sin opacar los sabores sutiles de la tarta de limón y las masas gourmet."
+  },
+  {
+    "id": 4,
+    "te": "Té Verde Orgánico & Jengibre",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té verde orgánico, jengibre deshidratado y esencia natural de limón.",
+    "contenido": "Equilibra las notas herbales del té verde orgánico con el toque picante y energizante del jengibre y la frescura cítrica del limón. Revitalizante, limpio y aromático.",
+    "momentos": "Perfecto para las mañanas o después de comer por la sensación de ligereza que aporta la combinación jengibre-limón.",
+    "perfil": "picante, cítrico, energizante, digestivo, con cafeína moderada",
+    "maridaje_productos": ["La Jacinta", "El Farito", "Imara"],
+    "notas_maridaje": "El jengibre y el limón potencian la crema de limón de La Jacinta y actúan como digestivo natural después de las masas gourmet."
+  },
+  {
+    "id": 5,
+    "te": "Rosa Mosqueta & Miel Orgánicas",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Cascarilla de rosa mosqueta y miel orgánicas, con sabor natural miel.",
+    "contenido": "Combina la vibrante acidez de la rosa mosqueta orgánica con la suavidad reconfortante de la miel orgánica. Sutilmente dulce, sumamente aromática y envolvente.",
+    "momentos": "Sin cafeína, ideal para disfrutar al caer la tarde, suavizar la garganta y un mimo natural en días fríos.",
+    "perfil": "dulce, floral, ácido, reconfortante, sin cafeína",
+    "maridaje_productos": ["La Jacinta", "Imara", "El Farito"],
+    "notas_maridaje": "La acidez natural de la rosa mosqueta contrasta con la dulzura de las masas secas. La miel orgánica une el perfil del té con la tarta de limón de manera armoniosa."
+  },
+  {
+    "id": 6,
+    "te": "Té Verde Orgánico & Lavanda Orgánica",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té verde orgánico y lavanda orgánica.",
+    "contenido": "Combina la sutil ligereza del té verde orgánico con las notas florales y relajantes de la lavanda orgánica. Taza equilibrada, de aroma cautivador y perfil suave.",
+    "momentos": "Perfecto para pausas de tarde o rituales de desconexión al final del día.",
+    "perfil": "floral, relajante, ligero, sin cafeína efectiva",
+    "maridaje_productos": ["Imara", "El Farito", "La Jacinta"],
+    "notas_maridaje": "La lavanda aporta una dimensión aromática que eleva las masas gourmet a una experiencia sensorial completa. Ideal para una degustación pausada y consciente."
+  },
+  {
+    "id": 7,
+    "te": "Té Negro Orgánico",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té negro orgánico.",
+    "contenido": "Carácter robusto, cuerpo equilibrado y notas maltosas y amaderadas. Elaborado con hojas seleccionadas desde su origen. Limpio y noble.",
+    "momentos": "Compañero perfecto para las mañanas o momentos donde se busca energía sostenida y claridad mental. Solo o con leche al estilo tradicional.",
+    "perfil": "robusto, maltoso, amaderado, energizante, con cafeína",
+    "maridaje_productos": ["La Eulogia", "La Simona", "La Rufina"],
+    "notas_maridaje": "Sus taninos limpian la grasa de la manteca y el dulce de leche de los alfajores. Clásico insuperable para acompañar chocolate. Servir sin azúcar para máximo contraste."
+  },
+  {
+    "id": 8,
+    "te": "Té Earl Grey Orgánico",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Té negro orgánico y esencia natural de bergamota.",
+    "contenido": "Rinde homenaje a la tradición inglesa combinando té negro orgánico con el aroma cítrico y sofisticado de la bergamota. Equilibrado, aromático y con cuerpo perfecto.",
+    "momentos": "Ideal para comenzar el día con enfoque y claridad mental, o para acompañar una tarde de lectura.",
+    "perfil": "cítrico, floral, robusto, sofisticado, con cafeína",
+    "maridaje_productos": ["La Eulogia", "La Simona", "La Rufina", "La Jacinta"],
+    "notas_maridaje": "★★★★★ El mejor maridaje para alfajores de chocolate. Los taninos limpian el dulce de leche y la bergamota aporta un contrapunto cítrico que eleva el sabor del chocolate. Servir a 90°C, 3-4 minutos, sin azúcar."
+  },
+  {
+    "id": 9,
+    "te": "Rosa Mosqueta Orgánica",
+    "marca": "Wally's Patagonia",
+    "presentacion": "Caja x 8 saquitos",
+    "ingredientes": "Cascarilla de rosa mosqueta orgánica.",
+    "contenido": "Monovarietal de rosa mosqueta silvestre cosechada en su punto óptimo. Color rojizo brillante, sabor sutilmente dulce con acidez equilibrada y refrescante.",
+    "momentos": "Sin cafeína, perfecta para cualquier hora del día o de la noche.",
+    "perfil": "dulce, ácido, floral, refrescante, sin cafeína",
+    "maridaje_productos": ["La Jacinta", "Imara", "El Farito"],
+    "notas_maridaje": "La acidez de la rosa mosqueta contrasta con la dulzura de las masas secas y complementa la crema de limón de La Jacinta con notas frutales autóctonas."
+  }
+]
