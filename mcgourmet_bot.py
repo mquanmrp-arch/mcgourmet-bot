@@ -1,6 +1,7 @@
 """
 McGourmet Bot v5.0 - Catálogo Visual
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
+version Oct-2026 mrp
 """
 
 import os, uuid, threading, time, urllib.request, urllib.parse, json
@@ -345,13 +346,13 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
 .card-body{padding:10px;}
 .card-name{font-weight:700;font-size:13px;color:var(--text);line-height:1.3;}
 .card-desc{font-size:11px;color:var(--muted);margin:4px 0 6px;line-height:1.4;}
-.card-price{font-family:'Playfair Display',serif;color:var(--brand);font-size:14px;font-weight:700;}
-.card-ctrl{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
-.qty-wrap{display:flex;align-items:center;gap:0;}
-.qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--brand);background:transparent;color:var(--brand);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.card-price{font-family:'Playfair Display',serif;color:var(--brand);font-size:14px;font-weight:700;margin-top:6px;}
+.card-ctrl{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin-top:8px;}
+.qty-wrap{display:flex;align-items:center;justify-content:center;gap:0;}
+.qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--brand);background:transparent;color:var(--brand);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .qty-btn:hover{background:var(--brand);color:#fff;}
-.qty-num{width:28px;text-align:center;font-size:13px;font-weight:700;color:var(--text);}
-.add-btn{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;}
+.qty-num{width:36px;text-align:center;font-size:14px;font-weight:700;color:var(--text);}
+.add-btn{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;width:100%;}
 .add-btn:hover{background:var(--brand-dk);}
 .add-btn:disabled{background:var(--muted);cursor:default;}
 
@@ -525,7 +526,7 @@ function renderCatalogo() {
               <button class="add-btn" id="btn-add-${p.id_producto}"
                 onclick="agregarAlCarrito(${p.id_producto})"
                 ${en_carrito >= LIMITE_UNIDADES ? 'disabled' : ''}>
-                ${en_carrito > 0 ? '✓ En carrito' : 'Agregar'}
+                ${en_carrito > 0 ? '✓ En carrito' : '🛒 Agregar'}
               </button>
             </div>
           </div>
