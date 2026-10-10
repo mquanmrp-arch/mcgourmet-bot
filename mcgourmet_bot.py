@@ -105,7 +105,7 @@ def setup_database():
 
         cur.execute("SELECT COUNT(*) FROM tbl_Catalogo")
         row   = cur.fetchone()
-        count = row[0] if not USE_PG else row["count"]
+        count = row[0]  # cursor plano (no RealDictCursor) → siempre tupla
         if count == 0:
             productos = [
                 ("Pasteleria", "La Eulogia", "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
@@ -166,9 +166,9 @@ def contar_pedidos_hoy():
     conn = get_conn(); cur = get_cur(conn)
     hoy  = datetime.now().strftime("%Y-%m-%d")
     ph   = "%s" if USE_PG else "?"
-    cur.execute(f"SELECT COUNT(*) FROM tbl_PedBot WHERE fecha_pedido LIKE {ph} AND estado='Confirmado'", (f"{hoy}%",))
+    cur.execute(f"SELECT COUNT(*) AS cnt FROM tbl_PedBot WHERE fecha_pedido LIKE {ph} AND estado='Confirmado'", (f"{hoy}%",))
     row  = cur.fetchone()
-    count = row["count"] if USE_PG else row[0]
+    count = row["cnt"] if USE_PG else row[0]
     conn.close(); return count
 
 def crear_pedido(session_id, nombre, telefono, notas):
@@ -829,12 +829,14 @@ def seed():
             return jsonify({"status": "ok", "msg": f"Catálogo ya tiene {count} productos"})
         ph = "%s" if USE_PG else "?"
         productos = [
-            ("Pasteleria", "La Eulogia",  "Alfajores de chocolate con relleno de chocotorta - Caja 12 unidades.", 15000.00),
-            ("Pasteleria", "La Simona",   "Alfajores de chocolate con relleno de almendras - Caja 12 unidades.",  15000.00),
-            ("Pasteleria", "La Rufina",   "Alfajores bañados en chocolate, de maicena - Caja 12 unidades.",       15000.00),
-            ("Pasteleria", "El Farito",   "Variedades de masas gourmet - Caja 1/2 kg.",                           18000.00),
-            ("Pasteleria", "La Jacinta",  "Tarta con crema de limón - Caja 1 unidad.",                            12000.00),
-            ("Pasteleria", "Imara",       "Variedad de masas gourmet - Caja 6 porciones.",                        12000.00),
+            ("Pasteleria", "La Eulogia",    "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 18000.00),
+            ("Pasteleria", "La Simona",     "Alfajor blanco, relleno dulce de leche, con crema de pistachos - Caja de 6 unidades.",    15000.00),
+            ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.",        15000.00),
+            ("Pasteleria", "La Aurora",     "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.",                        12000.00),
+            ("Pasteleria", "La Petrona",    "Alfajor de maicena - Caja de 12 unidades.",                                               12000.00),
+            ("Pasteleria", "La Jacinta",    "Tarta con crema de limón - Caja 1 unidad.",                                               23000.00),
+            ("Pasteleria", "La Rufina",     "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.",                    12000.00),
+            ("Pasteleria", "La Imara",      "Variedad de masas gourmet - Caja 6 porciones.",                                           18000.00),
         ]
         sql = (f"INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES ({ph},{ph},{ph},{ph},1)")
         for p in productos:
