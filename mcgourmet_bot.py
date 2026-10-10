@@ -109,11 +109,11 @@ def setup_database():
         if count == 0:
             productos = [
                 ("Pasteleria", "La Eulogia", "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
-                ("Pasteleria", "La Simona", "Alfajor blanco, relleno dulce de leche, con crema de pistachos - Caja de 6 unidades.", 15000.00),
+                ("Pasteleria", "La Simona", "Alfajor blanco, relleno dulce de leche, con crema de pistachos - Caja de 6 unidades.", 18000.00),
                 ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.", 15000.00),
                 ("Pasteleria", "La Aurora",  "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.", 12000.00),
                 ("Pasteleria", "La Petrona",  "Alfajor de maicena - Caja de 12 unidades", 12000.00),
-                ("Pasteleria", "La Jacinta", "Tarta con crema de limón - Caja 1 unidad.", 12000.00),
+                ("Pasteleria", "La Jacinta", "Tarta con crema de limón - Caja 1 unidad.", 23000.00),
                 ("Pasteleria", "La Rufina",  "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.", 12000.00),            
                 ("Pasteleria", "La Imara",      "Variedad de masas gourmet - Caja 6 porciones.", 12000.00),
             ]         
