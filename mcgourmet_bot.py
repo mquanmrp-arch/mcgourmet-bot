@@ -18,7 +18,7 @@ EMAIL_DESTINO  = os.environ.get("EMAIL_DESTINO", "")
 # Estructura: images/{id_producto}.jpg  (ej: images/1.jpg, images/2.jpg, ...)
 GITHUB_IMAGES_BASE = os.environ.get(
     "GITHUB_IMAGES_BASE",
-    "https://raw.githubusercontent.com/mquanmrp/mcgourmet-bot/main/images"
+    "https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images"
 )
 LOGO_URL = f"{GITHUB_IMAGES_BASE}/logo.png"
 
