@@ -326,7 +326,9 @@ def confirmar_pedido_api(session_id, nombre, telefono, notas, carrito_json):
     remito = generar_remito(id_p, nombre, telefono, notas, carrito, total)
     threading.Thread(target=enviar_email,    args=(id_p,), daemon=True).start()
     threading.Thread(target=enviar_telegram, args=(id_p,), daemon=True).start()
-    return {"ok": True, "id_pedido": id_p, "remito": remito, "total": total}
+    # Número de WhatsApp de McGourmet para el botón del cliente
+    wa_numero = os.environ.get("WA_NUMERO", "5492615024133")  # formato internacional sin +
+    return {"ok": True, "id_pedido": id_p, "remito": remito, "total": total, "wa_numero": wa_numero}
 
 # ── FLASK ──────────────────────────────────────────────────────
 setup_database()
@@ -436,6 +438,8 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
 .remito-ok p{font-size:14px;color:var(--muted);margin-top:6px;}
 .btn-nuevo{width:100%;margin-top:14px;padding:12px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;}
 .btn-nuevo:hover{opacity:.88;}
+.btn-wa{width:100%;margin-top:8px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;text-decoration:none;display:block;text-align:center;}
+.btn-wa:hover{opacity:.88;}
 
 /* ESTADO */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
@@ -764,7 +768,7 @@ async function enviarPedido() {
     const data = await resp.json();
 
     if (data.ok) {
-      mostrarRemito(data.remito, data.id_pedido);
+      mostrarRemito(data.remito, data.id_pedido, data.wa_numero);
       carrito = {};
       actualizarBadge();
     } else {
@@ -780,13 +784,19 @@ async function enviarPedido() {
 }
 
 // ── Mostrar remito ──────────────────────────────────────────────
-function mostrarRemito(remito, id_pedido) {
+function mostrarRemito(remito, id_pedido, wa_numero) {
+  const texto_wa = encodeURIComponent(
+    `¡Hola McGourmet! Acabo de hacer el pedido #${id_pedido} desde la tienda online.\n\n${remito}`
+  );
+  const wa_link = `https://wa.me/${wa_numero}?text=${texto_wa}`;
+
   document.getElementById('carrito-content').innerHTML = `
     <div class="remito-ok">
       <div class="check">✅</div>
       <p><strong>¡Pedido #${id_pedido} recibido!</strong><br>Te contactaremos pronto para coordinar la entrega.</p>
     </div>
     <div class="remito-box">${remito}</div>
+    <a class="btn-wa" href="${wa_link}" target="_blank">💬 Confirmar por WhatsApp</a>
     <button class="btn-nuevo" onclick="nuevoPedido()">🛍️ Hacer otro pedido</button>`;
 }
 
