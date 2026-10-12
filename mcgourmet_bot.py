@@ -718,7 +718,7 @@ function mostrarFormulario() {
       </div>
       <div class="form-group">
         <label>Aclaraciones</label>
-        <textarea id="f-notas" placeholder="Sin gluten, alergias, entrega, etc. (opcional)"></textarea>
+        <textarea id="f-notas" placeholder="hora de retiro, etc. (todos nuestros productos son c/gluten)"></textarea>
       </div>
       <div class="cart-total-box" style="margin-top:4px;">
         <div class="cart-total-row">
