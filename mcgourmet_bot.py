@@ -1,6 +1,7 @@
 """
 McGourmet Bot v5.0 - Catálogo Visual
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
+Envio message x Telegram
 version Oct-2026 mrp
 """
 
@@ -10,10 +11,12 @@ from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
 # ── Configuración ──────────────────────────────────────────────
-DATABASE_URL   = os.environ.get("DATABASE_URL", "")
-GMAIL_USER     = os.environ.get("GMAIL_USER", "")
-GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD", "")
-EMAIL_DESTINO  = os.environ.get("EMAIL_DESTINO", "")
+DATABASE_URL        = os.environ.get("DATABASE_URL", "")
+GMAIL_USER          = os.environ.get("GMAIL_USER", "")
+GMAIL_PASSWORD      = os.environ.get("GMAIL_PASSWORD", "")
+EMAIL_DESTINO       = os.environ.get("EMAIL_DESTINO", "")
+TELEGRAM_BOT_TOKEN  = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID    = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 # URL base de imágenes en GitHub (raw)
 # Estructura: images/{id_producto}.jpg  (ej: images/1.jpg, images/2.jpg, ...)
@@ -210,6 +213,40 @@ def get_pedido(id_pedido):
     ped["items"] = [dict(r) for r in cur.fetchall()]
     conn.close(); return ped
 
+# ── TELEGRAM ───────────────────────────────────────────────────
+def enviar_telegram(id_pedido):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("⚠️ Telegram: variables no configuradas")
+        return
+    try:
+        ped     = get_pedido(id_pedido)
+        items   = ped["items"]
+        detalle = "\n".join([f"  • {it['cantidad']}x {it['nombre_producto']}  $ {it['subtotal']:,.0f}" for it in items])
+        texto   = (f"🛒 *NUEVO PEDIDO McGourmet \\#{id_pedido}*\n"
+                   f"{'─'*30}\n"
+                   f"👤 *Cliente:* {ped['nombre_cliente']}\n"
+                   f"📱 *Teléfono:* {ped['telefono']}\n"
+                   f"📅 *Fecha:* {ped['fecha_pedido']}\n"
+                   f"📝 *Notas:* {ped['notas'] or 'Sin notas'}\n\n"
+                   f"*DETALLE:*\n{detalle}\n\n"
+                   f"{'─'*30}\n"
+                   f"💰 *TOTAL: $ {ped['total']:,.0f}*")
+        data = json.dumps({
+            "chat_id":    TELEGRAM_CHAT_ID,
+            "text":       texto,
+            "parse_mode": "Markdown"
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            print(f"📱 Telegram enviado #{id_pedido} - {resp.status}")
+    except Exception as e:
+        print(f"❌ Telegram error: {e}")
+
 # ── EMAIL (SendGrid) ───────────────────────────────────────────
 def enviar_email(id_pedido):
     api_key       = os.environ.get("SENDGRID_API_KEY", "")
@@ -287,7 +324,8 @@ def confirmar_pedido_api(session_id, nombre, telefono, notas, carrito_json):
         agregar_detalle(id_p, item["id_producto"], item["cantidad"])
 
     remito = generar_remito(id_p, nombre, telefono, notas, carrito, total)
-    threading.Thread(target=enviar_email, args=(id_p,), daemon=True).start()
+    threading.Thread(target=enviar_email,    args=(id_p,), daemon=True).start()
+    threading.Thread(target=enviar_telegram, args=(id_p,), daemon=True).start()
     return {"ok": True, "id_pedido": id_p, "remito": remito, "total": total}
 
 # ── FLASK ──────────────────────────────────────────────────────
