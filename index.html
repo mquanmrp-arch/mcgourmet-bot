@@ -1,0 +1,875 @@
+<title>MC Gourmet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Lato:wght@300;400;700&display=swap">
+
+<style>
+/* ─── TOKENS ──────────────────────────────────────────────────────
+   Layout: Hero centrado + secciones alternadas full-width, menú flotante lateral
+   Color:  Granate vino como acento, crema cálida de fondo, dorado como detalle
+   Type:   Playfair Display (display/headings) + Lato (body/ui)
+*/
+:root {
+  --bg:        #FDF8F2;
+  --bg2:       #F5EDE0;
+  --fg:        #2C1810;
+  --muted:     #7A6050;
+  --border:    #E0CDB5;
+  --wine:      #6B1A2B;
+  --wine-lt:   #8B2A3F;
+  --gold:      #B8973A;
+  --gold-lt:   #D4B05A;
+  --cream:     #FDF8F2;
+  --chef-bg:   #1A0A0E;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Lato', system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:      #14080C;
+    --bg2:     #1E1014;
+    --fg:      #F0E4D4;
+    --muted:   #A08878;
+    --border:  #3A2830;
+    --wine:    #A03050;
+    --wine-lt: #C04060;
+    --gold:    #C8A84A;
+    --gold-lt: #E0C060;
+    --cream:   #1E1014;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:      #14080C;
+  --bg2:     #1E1014;
+  --fg:      #F0E4D4;
+  --muted:   #A08878;
+  --border:  #3A2830;
+  --wine:    #A03050;
+  --wine-lt: #C04060;
+  --gold:    #C8A84A;
+  --gold-lt: #E0C060;
+  --cream:   #1E1014;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--fg);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+img { max-width: 100%; display: block; }
+
+/* ─── MENÚ FLOTANTE ──────────────────────────────────────────────── */
+.nav-float {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-float a {
+  display: block;
+  background: var(--wine);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 10px 14px 10px 16px;
+  border-radius: 8px 0 0 8px;
+  transition: background .2s, padding-left .2s;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+
+.nav-float a:hover {
+  background: var(--wine-lt);
+  padding-left: 22px;
+}
+
+/* ─── HERO ──────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  background: var(--chef-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 70% at 50% 40%, #3A0A1A 0%, #14080C 100%);
+  opacity: .85;
+}
+
+.hero-inner { position: relative; z-index: 1; max-width: 600px; }
+
+.hero-logo {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--gold);
+  margin: 0 auto 28px;
+  box-shadow: 0 0 40px rgba(184,151,58,.25);
+}
+
+.hero-tagline {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 2.8vw, 16px);
+  font-weight: 300;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 9vw, 72px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.05;
+  text-wrap: balance;
+  margin-bottom: 16px;
+}
+
+.hero-title span { color: var(--gold); }
+
+.hero-sub {
+  font-size: clamp(14px, 2.5vw, 16px);
+  color: rgba(255,255,255,.65);
+  max-width: 420px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+
+.hero-bots {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.bot-card {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 14px;
+  padding: 20px 24px;
+  text-decoration: none;
+  color: #fff;
+  transition: background .2s, border-color .2s, transform .2s;
+  min-width: 170px;
+  text-align: center;
+}
+
+.bot-card:hover {
+  background: rgba(107,26,43,.4);
+  border-color: var(--gold);
+  transform: translateY(-3px);
+}
+
+.bot-card .bot-icon { font-size: 28px; margin-bottom: 8px; }
+.bot-card .bot-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.bot-card .bot-desc { font-size: 11px; color: rgba(255,255,255,.55); line-height: 1.5; }
+
+/* ─── SECCIONES ─────────────────────────────────────────────────── */
+section { padding: 72px 24px; }
+
+.section-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--wine);
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--fg);
+  margin-bottom: 20px;
+}
+
+.section-title em { font-style: italic; color: var(--wine); }
+
+.divider {
+  width: 48px;
+  height: 2px;
+  background: var(--gold);
+  margin-bottom: 24px;
+}
+
+/* ─── ACERCA DE ──────────────────────────────────────────────────── */
+#acerca { background: var(--bg); }
+
+.acerca-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.acerca-img-wrap {
+  position: relative;
+}
+
+.acerca-img {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 4px 120px 4px 120px;
+  box-shadow: 8px 8px 0 var(--gold);
+}
+
+.acerca-text p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--fg);
+  margin-bottom: 16px;
+}
+
+.acerca-text .firma {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--wine);
+  margin-top: 24px;
+}
+
+.contact-line {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contact-line a, .contact-line span {
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.contact-line a:hover { color: var(--wine); }
+
+/* ─── SERVICIOS ─────────────────────────────────────────────────── */
+#servicios { background: var(--bg2); }
+
+.servicios-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-top: 16px;
+}
+
+.servicio-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 32px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .25s, transform .25s;
+}
+
+.servicio-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--wine);
+  transform: scaleX(0);
+  transition: transform .25s;
+  transform-origin: left;
+}
+
+.servicio-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(107,26,43,.12); }
+.servicio-card:hover::after { transform: scaleX(1); }
+
+.servicio-card .icon { font-size: 36px; margin-bottom: 16px; }
+.servicio-card h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--wine);
+  margin-bottom: 10px;
+}
+.servicio-card p { font-size: 14px; line-height: 1.7; color: var(--muted); }
+.servicio-card .tag {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(184,151,58,.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* ─── GALERÍA ────────────────────────────────────────────────────── */
+#galeria { background: var(--bg); }
+
+.galeria-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.galeria-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 1;
+}
+
+.galeria-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .35s ease;
+}
+
+.galeria-item:hover img { transform: scale(1.06); }
+
+.galeria-item .overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20,8,12,.85) 0%, transparent 55%);
+  opacity: 0;
+  transition: opacity .3s;
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+}
+
+.galeria-item:hover .overlay { opacity: 1; }
+
+.galeria-item .overlay-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.galeria-item .overlay-desc {
+  font-size: 10px;
+  color: var(--gold-lt);
+  margin-top: 3px;
+}
+
+/* item grande (primero y último) */
+.galeria-item.big {
+  grid-row: span 2;
+  aspect-ratio: auto;
+}
+
+/* ─── LIGHTBOX ───────────────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.88);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.lightbox.open { opacity: 1; pointer-events: all; }
+.lightbox img { max-width: min(90vw,640px); max-height: 80svh; border-radius: 8px; object-fit: contain; }
+.lb-caption {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #fff;
+}
+.lb-caption strong { font-family: var(--font-display); font-size: 18px; display: block; }
+.lb-caption span { font-size: 12px; color: var(--gold-lt); }
+.lb-close {
+  position: absolute;
+  top: 20px; right: 24px;
+  font-size: 28px;
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  background: none; border: none;
+  line-height: 1;
+  transition: color .2s;
+}
+.lb-close:hover { color: #fff; }
+
+/* ─── CONTACTO ───────────────────────────────────────────────────── */
+#contacto { background: var(--bg2); }
+
+.contacto-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.contacto-info { display: flex; flex-direction: column; gap: 20px; }
+
+.cinfo-item { display: flex; gap: 14px; align-items: flex-start; }
+
+.cinfo-icon {
+  width: 40px; height: 40px;
+  background: var(--wine);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cinfo-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 3px; font-weight: 700; }
+.cinfo-val { font-size: 15px; color: var(--fg); font-weight: 700; }
+.cinfo-val a { color: inherit; text-decoration: none; }
+.cinfo-val a:hover { color: var(--wine); }
+
+.privacy-link {
+  display: inline-block;
+  margin-top: 32px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+  transition: color .2s;
+}
+.privacy-link:hover { color: var(--wine); }
+
+.contacto-map-placeholder {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+}
+.contacto-map-placeholder h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+.contacto-map-placeholder p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  background: #25D366;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: opacity .2s;
+}
+.wa-btn:hover { opacity: .88; }
+
+/* ─── FOOTER ─────────────────────────────────────────────────────── */
+footer {
+  background: var(--chef-bg);
+  color: rgba(255,255,255,.45);
+  text-align: center;
+  padding: 28px 24px;
+  font-size: 12px;
+}
+footer strong { color: var(--gold); }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .nav-float { display: none; }
+
+  .nav-mobile {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--wine);
+    z-index: 100;
+    justify-content: space-around;
+    padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .nav-mobile a {
+    color: rgba(255,255,255,.8);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .nav-mobile a span { font-size: 18px; }
+  .nav-mobile a:hover { color: #fff; }
+
+  body { padding-bottom: 60px; }
+
+  .acerca-grid,
+  .servicios-grid,
+  .contacto-inner { grid-template-columns: 1fr; gap: 32px; }
+
+  .galeria-grid { grid-template-columns: repeat(2, 1fr); }
+  .galeria-item.big { grid-row: span 1; aspect-ratio: 1; }
+
+  .hero-logo { width: 150px; height: 150px; }
+}
+
+@media (max-width: 480px) {
+  .galeria-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
+/* mobile nav oculta por defecto */
+.nav-mobile { display: none; }
+</style>
+
+<!-- MENÚ FLOTANTE desktop -->
+<nav class="nav-float" aria-label="Navegación">
+  <a href="#acerca">Acerca de</a>
+  <a href="#servicios">Servicios</a>
+  <a href="#galeria">Galería</a>
+  <a href="#contacto">Contacto</a>
+</nav>
+
+<!-- MENÚ MOBILE bottom bar -->
+<nav class="nav-mobile" aria-label="Navegación móvil">
+  <a href="#acerca"><span>👩‍🍳</span>Acerca</a>
+  <a href="#servicios"><span>🤖</span>Servicios</a>
+  <a href="#galeria"><span>🎂</span>Galería</a>
+  <a href="#contacto"><span>📞</span>Contacto</a>
+</nav>
+
+<!-- ─── HERO ───────────────────────────────────────────────────────── -->
+<section class="hero" id="inicio">
+  <div class="hero-inner">
+    <img
+      class="hero-logo"
+      src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/logo.jpg"
+      alt="MC Gourmet logo"
+    >
+    <p class="hero-tagline">a tu mesa</p>
+    <h1 class="hero-title">MC <span>Gourmet</span></h1>
+    <p class="hero-sub">
+      Transformamos ingredientes nobles en experiencias memorables.
+      Alfajores, masas, tartas dulces y creaciones únicas.
+    </p>
+
+    <div class="hero-bots">
+      <a class="bot-card" href="https://mcgourmet-bot.onrender.com" target="_blank" rel="noopener">
+        <div class="bot-icon">🛒</div>
+        <div class="bot-name">Bot de Pedidos</div>
+        <div class="bot-desc">Cantidades limitadas.<br>Pedí online ahora.</div>
+      </a>
+      <a class="bot-card" href="https://mcgourmet-cheff.onrender.com" target="_blank" rel="noopener">
+        <div class="bot-icon">👨‍🍳</div>
+        <div class="bot-name">Consultas al Chef</div>
+        <div class="bot-desc">Para pedidos confirmados<br>y clientes exclusivos.</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── ACERCA DE ──────────────────────────────────────────────────── -->
+<section id="acerca">
+  <div class="section-inner">
+    <div class="acerca-grid">
+      <div class="acerca-img-wrap">
+        <img
+          class="acerca-img"
+          src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/mc.jpg"
+          alt="Mariana Catani — MC Gourmet"
+        >
+      </div>
+      <div class="acerca-text">
+        <p class="section-eyebrow">Acerca de</p>
+        <h2 class="section-title">Sabores que <em>encantan</em></h2>
+        <div class="divider"></div>
+        <p>
+          Muchas veces me he preguntado cuánto tiempo puede una persona
+          hacer lo mismo. La respuesta es inmediata y por supuesto aquí
+          estoy en un nuevo emprendimiento, el cual es mi pasión:
+          la Repostería.
+        </p>
+        <p>
+          Así nace <strong>MC.Gourmet</strong>, elaboración de masas al
+          mejor estilo gourmet.
+        </p>
+        <p class="firma">Soy MC.Gourmet y nos encantaría formar parte de esa mesa.</p>
+        <div class="contact-line">
+          <span>📞 <a href="tel:+5492615024133">261-5024133</a></span>
+          <span>✉️ <a href="mailto:mcp.gourmet@gmail.com">mcp.gourmet@gmail.com</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SERVICIOS ─────────────────────────────────────────────────── -->
+<section id="servicios">
+  <div class="section-inner">
+    <p class="section-eyebrow">Nuestros servicios</p>
+    <h2 class="section-title">Dos formas de <em>conectar</em></h2>
+    <div class="divider"></div>
+    <div class="servicios-grid">
+      <div class="servicio-card">
+        <div class="icon">🛒</div>
+        <h3>Bot de Pedidos</h3>
+        <p>
+          Realizá tu pedido directamente desde la tienda online.
+          Productos artesanales en cantidades limitadas para garantizar
+          la mejor calidad en cada preparación.
+        </p>
+        <a class="tag" href="https://mcgourmet-bot.onrender.com" target="_blank" rel="noopener">Ir al bot →</a>
+      </div>
+      <div class="servicio-card">
+        <div class="icon">👨‍🍳</div>
+        <h3>Consultas al Chef</h3>
+        <p>
+          Acceso exclusivo para clientes con pedidos confirmados.
+          Consultá sobre ingredientes, personalizaciones y seguimiento
+          de tu pedido directamente con el chef.
+        </p>
+        <a class="tag" href="https://mcgourmet-cheff.onrender.com" target="_blank" rel="noopener">Ir al Chef →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── GALERÍA ────────────────────────────────────────────────────── -->
+<section id="galeria">
+  <div class="section-inner">
+    <p class="section-eyebrow">Galería de productos</p>
+    <h2 class="section-title">Nuestras <em>creaciones</em></h2>
+    <div class="divider"></div>
+    <div class="galeria-grid">
+
+      <div class="galeria-item big" onclick="openLb('10.jpg','La Eulogia','Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/10.jpg" alt="La Eulogia" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Eulogia</div>
+            <div class="overlay-desc">Alfajor negro · Malbec</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('11.jpg','La Simona','Alfajor blanco, relleno dulce de leche, con crema de pistachos')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/11.jpg" alt="La Simona" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Simona</div>
+            <div class="overlay-desc">Alfajor Dubai · Pistachos</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('12.jpg','La Florentina','Alfajor negro, relleno dulce de leche y mermelada de membrillo')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/12.jpg" alt="La Florentina" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Florentina</div>
+            <div class="overlay-desc">Alfajor negro · Membrillo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('13.jpg','La Rufina','Alfajor de chocolate con relleno de chocotorta')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/13.jpg" alt="La Rufina" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Rufina</div>
+            <div class="overlay-desc">Alfajor chocolate · Chocotorta</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('14.jpg','La Aurora','Alfajor de chocolate con relleno de almendras')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/14.jpg" alt="La Aurora" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Aurora</div>
+            <div class="overlay-desc">Alfajor chocolate · Almendras</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('15.jpg','La Petrona','Alfajor de maicena con relleno de dulce de leche')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/15.jpg" alt="La Petrona" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Petrona</div>
+            <div class="overlay-desc">Alfajor maicena · DDL</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item" onclick="openLb('16.jpg','La Jacinta','Tarta con crema de limón')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/16.jpg" alt="La Jacinta" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Jacinta</div>
+            <div class="overlay-desc">Tarta · Crema de limón</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="galeria-item big" onclick="openLb('17.jpg','La Imara','Variedades de masas gourmet')">
+        <img src="https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/17.jpg" alt="La Imara" loading="lazy">
+        <div class="overlay">
+          <div>
+            <div class="overlay-name">La Imara</div>
+            <div class="overlay-desc">Variedades de masas gourmet</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── CONTACTO ──────────────────────────────────────────────────── -->
+<section id="contacto">
+  <div class="section-inner">
+    <div class="contacto-inner">
+      <div>
+        <p class="section-eyebrow">Contacto</p>
+        <h2 class="section-title">Hablemos de tu <em>pedido</em></h2>
+        <div class="divider"></div>
+        <div class="contacto-info">
+          <div class="cinfo-item">
+            <div class="cinfo-icon">📞</div>
+            <div>
+              <div class="cinfo-label">Teléfono / WhatsApp</div>
+              <div class="cinfo-val">261-5024133</div>
+            </div>
+          </div>
+          <div class="cinfo-item">
+            <div class="cinfo-icon">✉️</div>
+            <div>
+              <div class="cinfo-label">Email</div>
+              <div class="cinfo-val">mcp.gourmet@gmail.com</div>
+            </div>
+          </div>
+          <div class="cinfo-item">
+            <div class="cinfo-icon">📍</div>
+            <div>
+              <div class="cinfo-label">Ubicación</div>
+              <div class="cinfo-val">Mendoza, Argentina</div>
+            </div>
+          </div>
+        </div>
+        <a class="privacy-link" href="https://mquanmrp-arch.github.io/mcgourmet-privacidad/" target="_blank" rel="noopener">
+          Política de privacidad
+        </a>
+      </div>
+
+      <div class="contacto-map-placeholder">
+        <h3>¿Listo para pedir?</h3>
+        <p>
+          Realizá tu pedido a través del bot online o escribinos por WhatsApp.
+          Elaboramos en cantidades limitadas para garantizar la frescura y
+          calidad de cada producto.
+        </p>
+        <a class="wa-btn" href="https://wa.me/5492615024133" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.112 1.522 5.842L.057 23.535a.75.75 0 0 0 .908.908l5.693-1.465A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.896 0-3.674-.513-5.2-1.407l-.372-.22-3.845.989.989-3.845-.22-.372A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+          </svg>
+          Escribinos por WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─────────────────────────────────────────────────────── -->
+<footer>
+  <strong>MC Gourmet</strong> · Sabores que encantan · Mendoza, Argentina<br>
+  <span style="margin-top:4px;display:block">© 2026 Mariana Catani. Todos los derechos reservados.</span>
+</footer>
+
+<!-- ─── LIGHTBOX ──────────────────────────────────────────────────── -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" onclick="closeLb(event)">
+  <button class="lb-close" onclick="closeLb()" aria-label="Cerrar">✕</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-caption">
+    <strong id="lb-name"></strong>
+    <span id="lb-desc"></span>
+  </div>
+</div>
+
+<script>
+const BASE = 'https://raw.githubusercontent.com/mquanmrp-arch/mcgourmet-bot/main/images/';
+
+function openLb(file, name, desc) {
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lb-img').src = BASE + file;
+  document.getElementById('lb-img').alt = name;
+  document.getElementById('lb-name').textContent = name;
+  document.getElementById('lb-desc').textContent = desc;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLb(e) {
+  if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('lb-close')) return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb({ target: document.getElementById('lightbox') }); });
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+</script>

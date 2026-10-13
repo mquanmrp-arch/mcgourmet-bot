@@ -1,8 +1,8 @@
 """
-McGourmet Bot v5.0 - Catálogo Visual
+McGourmet Bot v6.0 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
 Envio message x Telegram
-version Oct-2026 mrp
+version Oct-2026 mrp — v6 landing page estática
 """
 
 import os, uuid, threading, time, urllib.request, urllib.parse, json
@@ -815,6 +815,11 @@ cargarCatalogo();
 # ── RUTAS FLASK ────────────────────────────────────────────────
 @flask_app.route("/")
 def index():
+    with open("index.html", encoding="utf-8") as f:
+        return f.read()
+
+@flask_app.route("/pedidos-bot")
+def pedidos_bot():
     html = (HTML
             .replace("__LOGO_URL__", LOGO_URL)
             .replace("__GITHUB_IMAGES_BASE__", GITHUB_IMAGES_BASE)
