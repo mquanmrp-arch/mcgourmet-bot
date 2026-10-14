@@ -1,14 +1,14 @@
 """
-McGourmet Bot v6.1 - Catálogo Visual + Landing Page + PWA
+McGourmet Bot v6.0 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
 Envio message x wsap de cliente a 2615024133
 Envio message x Telegram a 2616741098
-version Oct-2026 mrp — v6.1 PWA (manifest, service worker, icons)
+version Oct-2026 mrp — v6 landing page estática
 """
 
 import os, uuid, threading, time, urllib.request, urllib.parse, json
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template_string, send_file
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
 # ── Configuración ──────────────────────────────────────────────
@@ -856,29 +856,13 @@ def api_pedidos():
     conn.close()
     return jsonify(rows)
 
-@flask_app.route("/manifest.json")
-def manifest():
-    return send_file("manifest.json", mimetype="application/manifest+json")
-
-@flask_app.route("/sw.js")
-def service_worker():
-    return send_file("sw.js", mimetype="application/javascript")
-
-@flask_app.route("/icon-192.png")
-def icon_192():
-    return send_file("icon-192.png", mimetype="image/png")
-
-@flask_app.route("/icon-512.png")
-def icon_512():
-    return send_file("icon-512.png", mimetype="image/png")
-
 @flask_app.route("/health")
 def health():
-    return jsonify({"status": "ok", "version": "6.1", "db": "postgresql" if USE_PG else "sqlite"})
+    return jsonify({"status": "ok", "version": "5.0", "db": "postgresql" if USE_PG else "sqlite"})
 
 @flask_app.route("/debug")
 def debug():
-    info = {"version": "6.1", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
+    info = {"version": "5.0", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
     try:
         conn = get_conn(); cur = conn.cursor()
         cur.execute('SELECT COUNT(*) FROM tbl_Catalogo'); info["catalogo_count"] = cur.fetchone()[0]
