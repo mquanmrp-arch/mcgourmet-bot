@@ -186,7 +186,7 @@ LÍNEA PASTELERÍA MCGOURMET — CATÁLOGO ACTUAL
     · Extra: copa de vino tinto de postre (cosecha tardía) para una experiencia premium.
   Sugerencia de presentación: servir a temperatura ambiente, en tabla de madera con frutos rojos frescos.
 
-■ La Simona — Alfajor blanco, relleno dulce de leche, con crema de pistachos. Caja 6 unidades.
+■ La Simona — Alfajor blanco, relleno con crema Bariloche y pistacho. Caja 6 unidades.
   Perfil: cremoso, suave, con notas verdes y tostadas del pistacho.
   Maridaje ideal:
     · Vinos: Torrontés de Cafayate (aromas florales y frutales que contrastan el pistacho),
@@ -406,7 +406,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
 .sdot{width:7px;height:7px;background:#4ADE80;border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .status span{color:rgba(255,255,255,.6);font-size:10px;}
-.msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px;background:var(--cream);}
+.msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;background:var(--cream);}
 .msgs::-webkit-scrollbar{width:3px;}
 .msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 .bw{display:flex;align-items:flex-end;gap:8px;}
@@ -416,7 +416,10 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
 .bubble{max-width:80%;padding:10px 14px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 .bubble.bot{background:#fff;color:var(--text);border-radius:16px 16px 16px 4px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .bubble.user{background:var(--brand);color:#fff;border-radius:16px 16px 4px 16px;}
-.qr{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-top:1px solid var(--border);}
+.barra-inicio{background:#fff;border-bottom:1px solid var(--border);padding:6px 14px;}
+.barra-inicio a{display:inline-flex;align-items:center;gap:5px;color:var(--brand);font-size:13px;font-weight:700;text-decoration:none;}
+.barra-inicio a:hover{opacity:.75;}
+.qr{display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-top:1px solid var(--border);}
 .qb{background:transparent;border:1.5px solid var(--brand);color:var(--brand);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;transition:all .2s;font-weight:700;}
 .qb:hover{background:var(--brand);color:#fff;}
 .inp{padding:10px 14px 16px;display:flex;gap:8px;background:#fff;}
@@ -440,8 +443,9 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
       <div class="status"><div class="sdot"></div><span>En linea</span></div>
     </div>
   </div>
+  <div class="barra-inicio"><a href="/">&#8592; Inicio</a></div>
   <div class="msgs" id="msgs"></div>
-  <div class="qr">
+  <div class="qr" id="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
     <button class="qb" onclick="send('Como sirvo el plato seleccionado?')">Como servirlos</button>
     <button class="qb" onclick="send('Que salsa sugeries?')">Salsas</button>
@@ -458,7 +462,7 @@ function addMsg(t, r){
   const w = document.createElement('div'); w.className = 'bw ' + r;
   const a = document.createElement('div');
   if(r === 'bot'){ a.className = 'av'; a.textContent = '👨\u200d🍳'; }
-  else { a.className = 'av user-av'; a.textContent = 'u'; }
+  else { a.className = 'av user-av'; a.textContent = '👤'; }
   const b = document.createElement('div');
   b.className = 'bubble ' + r; b.textContent = t;
   r === 'bot' ? w.append(a, b) : w.append(b, a);
@@ -485,6 +489,10 @@ async function send(t){
       body: JSON.stringify({session_id: sid, message: msg})
     });
     const d = await r.json(); hideT(); addMsg(d.response, 'bot');
+    // Mostrar botones de respuesta rápida al llegar al chat (bienvenida del chef)
+    if(d.response.includes('¡Bienvenido')){
+      document.getElementById('qr').style.display='flex';
+    }
   } catch(e){ hideT(); addMsg('Error de conexion. Intenta nuevamente.', 'bot'); }
 }
 window.onload = () => send('INICIO');
