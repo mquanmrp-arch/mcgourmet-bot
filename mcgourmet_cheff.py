@@ -439,7 +439,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
       <div class="status"><div class="sdot"></div><span>En linea</span></div>
     </div>
   </div>
-  <div class="barra-inicio"><a href="javascript:void(0)" onclick="window.location.href=window.location.origin+'/'">&#8592; Inicio</a></div>
+  <div class="barra-inicio"><a href="https://mcgourmet-bot.onrender.com/">&#8592; Inicio</a></div>
   <div class="msgs" id="msgs"></div>
   <div class="qr" id="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
