@@ -396,14 +396,12 @@ HTML_CHEF = """<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:12px;}
 .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;height:95vh;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(92,61,46,.2);overflow:hidden;border:1px solid var(--border);}
-.header{background:var(--brand);padding:16px 20px;display:flex;align-items:center;gap:14px;position:relative;}
-.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),transparent,var(--gold));}
-.avatar{width:56px;height:56px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:2px solid rgba(255,255,255,.3);}
-.header-info h1{font-family:'Playfair Display',serif;color:#fff;font-size:18px;line-height:1.1;}
-.header-info .lema{color:var(--gold);font-size:11px;font-style:italic;margin-top:2px;}
-.header-info .sub{color:rgba(255,255,255,.7);font-size:11px;margin-top:3px;}
-.status{display:flex;align-items:center;gap:5px;margin-top:4px;}
-.sdot{width:7px;height:7px;background:#4ADE80;border-radius:50%;animation:pulse 2s infinite;}
+.header{background:var(--brand);padding:8px 14px;display:flex;align-items:center;gap:10px;position:relative;}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent,var(--gold));}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid rgba(255,255,255,.3);}
+.header-info h1{font-family:'Playfair Display',serif;color:#fff;font-size:15px;line-height:1.1;}
+.status{display:flex;align-items:center;gap:5px;margin-top:3px;}
+.sdot{width:6px;height:6px;background:#4ADE80;border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .status span{color:rgba(255,255,255,.6);font-size:10px;}
 .msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;background:var(--cream);}
@@ -416,13 +414,13 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
 .bubble{max-width:80%;padding:10px 14px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 .bubble.bot{background:#fff;color:var(--text);border-radius:16px 16px 16px 4px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .bubble.user{background:var(--brand);color:#fff;border-radius:16px 16px 4px 16px;}
-.barra-inicio{background:#fff;border-bottom:1px solid var(--border);padding:6px 14px;}
+.barra-inicio{background:#fff;border-bottom:1px solid var(--border);padding:4px 14px;}
 .barra-inicio a{display:inline-flex;align-items:center;gap:5px;color:var(--brand);font-size:13px;font-weight:700;text-decoration:none;}
 .barra-inicio a:hover{opacity:.75;}
 .qr{display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-top:1px solid var(--border);}
 .qb{background:transparent;border:1.5px solid var(--brand);color:var(--brand);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;transition:all .2s;font-weight:700;}
 .qb:hover{background:var(--brand);color:#fff;}
-.inp{padding:10px 14px 16px;display:flex;gap:8px;background:#fff;}
+.inp{padding:8px 14px 10px;display:flex;gap:8px;background:#fff;}
 .inp input{flex:1;border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;font-size:13.5px;outline:none;color:var(--text);background:var(--cream);transition:border .2s;}
 .inp input:focus{border-color:var(--brand);}
 .inp button{width:42px;height:42px;border-radius:50%;background:var(--brand);border:none;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;transition:background .2s;display:flex;align-items:center;justify-content:center;}
@@ -438,12 +436,10 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
     <div class="avatar">👨‍🍳</div>
     <div class="header-info">
       <h1>Chef McGourmet</h1>
-      <div class="lema">Tu asesor de maridaje</div>
-      <div class="sub">Gastronomía artesanal</div>
       <div class="status"><div class="sdot"></div><span>En linea</span></div>
     </div>
   </div>
-  <div class="barra-inicio"><a href="/">&#8592; Inicio</a></div>
+  <div class="barra-inicio"><a href="/index.html">&#8592; Inicio</a></div>
   <div class="msgs" id="msgs"></div>
   <div class="qr" id="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
@@ -495,7 +491,7 @@ async function send(t){
     }
   } catch(e){ hideT(); addMsg('Error de conexion. Intenta nuevamente.', 'bot'); }
 }
-window.onload = () => send('INICIO');
+window.onload = () => send('Chat');
 </script></body></html>"""
 
 @chef_app.route("/")
