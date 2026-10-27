@@ -1,9 +1,9 @@
 """
-McGourmet Bot v6.0 - Catálogo Visual + Landing Page
+McGourmet Bot v6.1 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
 Envio message x wsap de cliente a 2615024133
 Envio message x Telegram a 2616741098
-version Oct-2026 mrp — v6 landing page estática
+version Oct-2026 mrp — v6.1 botón Inicio en header y en formulario/remito
 """
 
 import os, uuid, threading, time, urllib.request, urllib.parse, json
@@ -114,7 +114,7 @@ def setup_database():
         if count == 0:
             productos = [
                 ("Pasteleria", "La Eulogia", "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
-                ("Pasteleria", "La Simona", "Alfajor blanco, relleno dulce de leche, con crema Bariloche - Caja de 6 unidades.", 18000.00),
+                ("Pasteleria", "La Simona", "Alfajor blanco, relleno con crema Bariloche y pistacho - Caja de 6 unidades.", 18000.00),
                 ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.", 15000.00),
                 ("Pasteleria", "La Aurora",  "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.", 12000.00),
                 ("Pasteleria", "La Petrona",  "Alfajor de maicena - Caja de 12 unidades", 12000.00),
@@ -366,6 +366,11 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
 .sonline{color:rgba(255,255,255,.55);font-size:10px;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
+/* BARRA INICIO */
+.barra-inicio{background:#fff;border-bottom:1px solid var(--border);padding:6px 14px;}
+.barra-inicio a{display:inline-flex;align-items:center;gap:5px;color:var(--brand);font-size:13px;font-weight:700;text-decoration:none;}
+.barra-inicio a:hover{opacity:.75;}
+
 /* TABS */
 .tabs{display:flex;background:#fff;border-bottom:2px solid var(--border);}
 .tab{flex:1;padding:10px 4px;font-size:13px;font-weight:700;color:var(--muted);border:none;background:none;cursor:pointer;transition:color .2s;position:relative;}
@@ -466,6 +471,11 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
       <div class="tel">Tel: 261 5024133</div>
       <div><span class="sdot"></span><span class="sonline">En línea</span></div>
     </div>
+  </div>
+
+  <!-- BARRA INICIO -->
+  <div class="barra-inicio">
+    <a href="/">&#8592; Inicio</a>
   </div>
 
   <!-- TABS -->
@@ -885,7 +895,7 @@ def seed():
         ph = "%s" if USE_PG else "?"
         productos = [
             ("Pasteleria", "La Eulogia",    "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 18000.00),
-            ("Pasteleria", "La Simona",     "Alfajor blanco, relleno dulce de leche, con crema Bariloche - Caja de 6 unidades.",    15000.00),
+            ("Pasteleria", "La Simona",     "Alfajor blanco, con crema Bariloche y pistacho - Caja de 6 unidades.",    15000.00),
             ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.",        15000.00),
             ("Pasteleria", "La Aurora",     "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.",                        12000.00),
             ("Pasteleria", "La Petrona",    "Alfajor de maicena - Caja de 12 unidades.",                                               12000.00),
