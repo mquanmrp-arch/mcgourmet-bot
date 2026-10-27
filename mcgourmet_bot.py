@@ -344,6 +344,7 @@ HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>McGourmet — Pedidos</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --brand:#B5261E; --brand-dk:#8B1A14; --cream:#FDF6EC;
@@ -442,8 +443,10 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
 .remito-ok{text-align:center;margin-bottom:16px;}
 .remito-ok .check{font-size:48px;}
 .remito-ok p{font-size:14px;color:var(--muted);margin-top:6px;}
-.btn-nuevo{width:100%;margin-top:14px;padding:12px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn-nuevo{width:100%;margin-top:8px;padding:12px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;}
 .btn-nuevo:hover{opacity:.88;}
+.btn-pdf{width:100%;margin-top:8px;padding:12px;background:#fff;color:var(--brand);border:2px solid var(--brand);border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-pdf:hover{background:var(--brand);color:#fff;}
 .btn-wa{width:100%;margin-top:8px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;text-decoration:none;display:block;text-align:center;}
 .btn-wa:hover{opacity:.88;}
 
@@ -808,12 +811,100 @@ function mostrarRemito(remito, id_pedido, wa_numero) {
     </div>
     <div class="remito-box">${remito}</div>
     <a class="btn-wa" href="${wa_link}" target="_blank">💬 Confirmar por WhatsApp</a>
+    <button class="btn-pdf" onclick="descargarRemitoPDF(${id_pedido})">📄 Guardar remito PDF</button>
     <button class="btn-nuevo" onclick="nuevoPedido()">🛍️ Hacer otro pedido</button>`;
 }
 
 function nuevoPedido() {
   renderCatalogo();
   showTab('catalogo');
+}
+
+// ── Generar PDF del remito ──────────────────────────────────────
+function descargarRemitoPDF(id_pedido) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a6' });
+
+  const W = doc.internal.pageSize.getWidth();
+  const margen = 10;
+  let y = 12;
+
+  // Encabezado
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('McGourmet', W / 2, y, { align: 'center' }); y += 6;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Sabores que encantan', W / 2, y, { align: 'center' }); y += 5;
+  doc.text('Tel: 261 5024133', W / 2, y, { align: 'center' }); y += 5;
+
+  // Línea separadora
+  doc.setDrawColor(181, 38, 30);
+  doc.setLineWidth(0.5);
+  doc.line(margen, y, W - margen, y); y += 5;
+
+  // Número de remito y fecha
+  const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`REMITO N° ${String(id_pedido).padStart(4,'0')}`, margen, y); y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`Fecha: ${fecha}`, margen, y); y += 4;
+
+  // Datos del cliente desde el formulario (ya enviado)
+  const nombre = (document.getElementById('f-nombre') || {}).value || '';
+  const tel    = (document.getElementById('f-tel')    || {}).value || '';
+  const notas  = (document.getElementById('f-notas')  || {}).value || '';
+  if (nombre) { doc.text(`Cliente: ${nombre}`, margen, y); y += 4; }
+  if (tel)    { doc.text(`Tel: ${tel}`,         margen, y); y += 4; }
+
+  doc.line(margen, y, W - margen, y); y += 5;
+
+  // Detalle de productos
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('DETALLE', margen, y); y += 5;
+  doc.setFont('helvetica', 'normal');
+
+  const items = Object.values(carrito.length !== undefined ? {} : carrito);
+  // Leer items del DOM si carrito ya fue limpiado
+  const remitoDom = document.querySelector('.remito-box');
+  if (remitoDom) {
+    const lineas = remitoDom.textContent.split('\n');
+    let enDetalle = false;
+    let total = '';
+    lineas.forEach(linea => {
+      const l = linea.trim();
+      if (!l || l.startsWith('=') || l.startsWith('-')) return;
+      if (l === 'DETALLE') { enDetalle = true; return; }
+      if (l.startsWith('TOTAL:')) { total = l; enDetalle = false; }
+      if (enDetalle) {
+        doc.text(l, margen, y); y += 4;
+        if (y > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); y = 12; }
+      }
+    });
+    doc.line(margen, y, W - margen, y); y += 5;
+    if (total) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(total, margen, y); y += 6;
+    }
+  }
+
+  // Notas
+  if (notas) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text(`Notas: ${notas}`, margen, y); y += 5;
+  }
+
+  doc.line(margen, y, W - margen, y); y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('¡Gracias por elegirnos! Te contactaremos pronto.', W / 2, y, { align: 'center' });
+
+  doc.save(`McGourmet-Remito-${String(id_pedido).padStart(4,'0')}.pdf`);
 }
 
 // ── Init ────────────────────────────────────────────────────────
