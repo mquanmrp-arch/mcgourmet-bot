@@ -1,8 +1,9 @@
 """
 McGourmet Bot v6.1 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
-Envio message x wsap de cliente a 2615024133
+Se Elimina el Envio message x wsap de cliente a 2615024133 
 Envio message x Telegram a 2616741098
+Se adiciona la opcion de imprimir el remito en pdf
 version Oct-2026 mrp — v6.1 botón Inicio en header y en formulario/remito
 """
 
@@ -298,6 +299,8 @@ def generar_remito(id_pedido, nombre, telefono, notas, carrito, total):
               "  DETALLE", "-" * 40]
     for item in carrito:
         lineas.append(f"  {item['cantidad']}x {item['nombre']}")
+        if item.get('descripcion'):
+            lineas.append(f"     {item['descripcion']}")
         lineas.append(f"     $ {item['precio']:,.0f} c/u  =  $ {item['subtotal']:,.0f}")
     lineas += ["-" * 40, f"  TOTAL:          $ {total:,.0f}", sep]
     if notas:
@@ -447,8 +450,6 @@ body{font-family:'Lato',sans-serif;background:var(--cream);min-height:100vh;disp
 .btn-nuevo:hover{opacity:.88;}
 .btn-pdf{width:100%;margin-top:8px;padding:12px;background:#fff;color:var(--brand);border:2px solid var(--brand);border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
 .btn-pdf:hover{background:var(--brand);color:#fff;}
-.btn-wa{width:100%;margin-top:8px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;text-decoration:none;display:block;text-align:center;}
-.btn-wa:hover{opacity:.88;}
 
 /* ESTADO */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
@@ -617,6 +618,7 @@ function agregarAlCarrito(id_producto) {
     carrito[id_producto] = {
       id_producto: prod.id_producto,
       nombre:      prod.nombre_producto,
+      descripcion: prod.descripcion,
       precio:      prod.precio,
       imagen:      imgSrc(prod),
       cantidad:    final,
@@ -773,6 +775,7 @@ async function enviarPedido() {
         carrito: items.map(i => ({
           id_producto: i.id_producto,
           nombre:      i.nombre,
+          descripcion: i.descripcion || '',
           precio:      i.precio,
           cantidad:    i.cantidad,
           subtotal:    i.subtotal,
@@ -782,7 +785,7 @@ async function enviarPedido() {
     const data = await resp.json();
 
     if (data.ok) {
-      mostrarRemito(data.remito, data.id_pedido, data.wa_numero);
+      mostrarRemito(data.remito, data.id_pedido);
       carrito = {};
       actualizarBadge();
     } else {
@@ -798,19 +801,13 @@ async function enviarPedido() {
 }
 
 // ── Mostrar remito ──────────────────────────────────────────────
-function mostrarRemito(remito, id_pedido, wa_numero) {
-  const texto_wa = encodeURIComponent(
-    `¡Hola McGourmet! Acabo de hacer el pedido #${id_pedido} desde la tienda online.\n\n${remito}`
-  );
-  const wa_link = `https://wa.me/${wa_numero}?text=${texto_wa}`;
-
+function mostrarRemito(remito, id_pedido) {
   document.getElementById('carrito-content').innerHTML = `
     <div class="remito-ok">
       <div class="check">✅</div>
       <p><strong>¡Pedido #${id_pedido} recibido!</strong><br>Te contactaremos pronto para coordinar la entrega.</p>
     </div>
     <div class="remito-box">${remito}</div>
-    <a class="btn-wa" href="${wa_link}" target="_blank">💬 Confirmar por WhatsApp</a>
     <button class="btn-pdf" onclick="descargarRemitoPDF(${id_pedido})">📄 Guardar remito PDF</button>
     <button class="btn-nuevo" onclick="nuevoPedido()">🛍️ Hacer otro pedido</button>`;
 }
