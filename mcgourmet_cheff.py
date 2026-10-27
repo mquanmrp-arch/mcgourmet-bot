@@ -394,8 +394,8 @@ HTML_CHEF = """<!DOCTYPE html>
 <style>
 :root{--brand:#5C3D2E;--brand-dk:#3E2723;--cream:#FDF6EC;--gold:#C9A84C;--olive:#6B7C45;--text:#2C1810;--muted:#8B7355;--border:#E8D5B7;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:12px;}
-.wrap{width:100%;max-width:440px;display:flex;flex-direction:column;height:95vh;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(92,61,46,.2);overflow:hidden;border:1px solid var(--border);}
+body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-content:center;height:100dvh;overflow:hidden;}
+.wrap{width:100%;max-width:440px;display:flex;flex-direction:column;height:100dvh;background:#fff;box-shadow:0 24px 80px rgba(92,61,46,.2);overflow:hidden;border-left:1px solid var(--border);border-right:1px solid var(--border);}
 .header{background:var(--brand);padding:8px 14px;display:flex;align-items:center;gap:10px;position:relative;}
 .header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent,var(--gold));}
 .avatar{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid rgba(255,255,255,.3);}
@@ -404,7 +404,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
 .sdot{width:6px;height:6px;background:#4ADE80;border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .status span{color:rgba(255,255,255,.6);font-size:10px;}
-.msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;background:var(--cream);}
+.msgs{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;background:var(--cream);}
 .msgs::-webkit-scrollbar{width:3px;}
 .msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 .bw{display:flex;align-items:flex-end;gap:8px;}
@@ -439,7 +439,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
       <div class="status"><div class="sdot"></div><span>En linea</span></div>
     </div>
   </div>
-  <div class="barra-inicio"><a href="/index.html">&#8592; Inicio</a></div>
+  <div class="barra-inicio"><a href="javascript:void(0)" onclick="window.location.href=window.location.origin+'/'">&#8592; Inicio</a></div>
   <div class="msgs" id="msgs"></div>
   <div class="qr" id="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
