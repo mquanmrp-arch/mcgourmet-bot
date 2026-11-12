@@ -1,5 +1,5 @@
 """
-McGourmet Bot v6.4 - Catálogo Visual + Landing Page
+McGourmet Bot v6.5 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
 Se Elimina el Envio message x wsap de cliente a 2615024133 
 Envio message x Telegram a 2616741098
@@ -8,12 +8,13 @@ version Oct-2026 mrp — v6.1 botón Inicio en header y en formulario/remito
 v6.2 Nov-2026 — fix remito PDF: incluye cliente, teléfono y aclaraciones; textos largos con salto de línea
 v6.3 Nov-2026 — precios, subtotales y total del pedido se toman de tbl_Catalogo (no del navegador)
 v6.4 Nov-2026 — /pedidos, /debug y /seed protegidas con ADMIN_KEY; fecha y hora de Argentina (UTC-3)
+v6.5 Nov-2026 — email (SendGrid) apagado salvo EMAIL_HABILITADO=1; rutas PWA: manifest.json, sw.js, íconos y favicon
 """
 
 import os, uuid, threading, time, urllib.request, urllib.parse, json, hmac
 from datetime import datetime, timezone, timedelta
 from functools import wraps
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, send_from_directory, Response
 from flask_cors import CORS
 
 # ── Configuración ──────────────────────────────────────────────
@@ -34,6 +35,13 @@ LOGO_URL = f"{GITHUB_IMAGES_BASE}/logo.png"
 
 LIMITE_PEDIDOS_DIA = int(os.environ.get("LIMITE_PEDIDOS_DIA", "50"))
 LIMITE_UNIDADES    = int(os.environ.get("LIMITE_UNIDADES", "2"))
+
+# Aviso por email (SendGrid). Apagado por ahora: los pedidos se avisan por Telegram.
+# Para volver a activarlo: EMAIL_HABILITADO=1 en Render (y una SENDGRID_API_KEY válida).
+EMAIL_HABILITADO = os.environ.get("EMAIL_HABILITADO", "0") == "1"
+
+# Carpeta del proyecto (donde están index.html, icon-192.png e icon-512.png)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Clave para las rutas privadas (/pedidos, /debug, /seed).
 # Definir ADMIN_KEY en Render → Environment. Sin clave definida, esas rutas quedan bloqueadas.
@@ -230,6 +238,13 @@ def get_pedido(id_pedido):
     ped["items"] = [dict(r) for r in cur.fetchall()]
     conn.close(); return ped
 
+# ── Marcar pedido como notificado ──────────────────────────────
+def marcar_notificado(id_pedido):
+    conn = get_conn(); cur = get_cur(conn)
+    ph   = "%s" if USE_PG else "?"
+    cur.execute(f"UPDATE tbl_PedBot SET notificado=1 WHERE id_pedido={ph}", (id_pedido,))
+    conn.commit(); conn.close()
+
 # ── TELEGRAM ───────────────────────────────────────────────────
 def enviar_telegram(id_pedido):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
@@ -261,6 +276,7 @@ def enviar_telegram(id_pedido):
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             print(f"📱 Telegram enviado #{id_pedido} - {resp.status}")
+        marcar_notificado(id_pedido)
     except Exception as e:
         print(f"❌ Telegram error: {e}")
 
@@ -296,10 +312,7 @@ def enviar_email(id_pedido):
         )
         with urllib.request.urlopen(req) as resp:
             print(f"✉️ Email enviado #{id_pedido} - {resp.status}")
-        conn = get_conn(); cur = get_cur(conn)
-        ph   = "%s" if USE_PG else "?"
-        cur.execute(f"UPDATE tbl_PedBot SET notificado=1 WHERE id_pedido={ph}", (id_pedido,))
-        conn.commit(); conn.close()
+        marcar_notificado(id_pedido)
     except Exception as e:
         print(f"❌ Email error: {e}")
 
@@ -403,7 +416,8 @@ def confirmar_pedido_api(session_id, nombre, telefono, notas, carrito_json):
 
     fecha  = ahora().strftime("%d/%m/%Y %H:%M")
     remito = generar_remito(id_p, nombre, telefono, notas, carrito, total, fecha)
-    threading.Thread(target=enviar_email,    args=(id_p,), daemon=True).start()
+    if EMAIL_HABILITADO:
+        threading.Thread(target=enviar_email, args=(id_p,), daemon=True).start()
     threading.Thread(target=enviar_telegram, args=(id_p,), daemon=True).start()
     # Número de WhatsApp de McGourmet para el botón del cliente
     wa_numero = os.environ.get("WA_NUMERO", "5492615024133")  # formato internacional sin +
@@ -1043,6 +1057,47 @@ def index():
     with open("index.html", encoding="utf-8") as f:
         return f.read()
 
+# ── PWA: manifest, service worker e íconos ─────────────────────
+@flask_app.route("/manifest.json")
+def manifest():
+    return jsonify({
+        "name": "MC Gourmet",
+        "short_name": "MC Gourmet",
+        "description": "Sabores que encantan — Repostería artesanal gourmet de Mendoza",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#14080C",
+        "theme_color": "#6B1A2B",
+        "lang": "es-AR",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+        ],
+    })
+
+@flask_app.route("/sw.js")
+def service_worker():
+    # Service worker mínimo: permite instalar la app, pero NO guarda nada en caché,
+    # así el catálogo y los precios siempre salen del servidor.
+    js = ("self.addEventListener('install', () => self.skipWaiting());\n"
+          "self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));\n"
+          "self.addEventListener('fetch', () => {});\n")
+    return Response(js, mimetype="application/javascript",
+                    headers={"Cache-Control": "no-cache"})
+
+@flask_app.route("/icon-192.png")
+def icon_192():
+    return send_from_directory(BASE_DIR, "icon-192.png", mimetype="image/png", max_age=86400)
+
+@flask_app.route("/icon-512.png")
+def icon_512():
+    return send_from_directory(BASE_DIR, "icon-512.png", mimetype="image/png", max_age=86400)
+
+@flask_app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(BASE_DIR, "icon-192.png", mimetype="image/png", max_age=86400)
+
 @flask_app.route("/pedidos-bot")
 def pedidos_bot():
     html = (HTML
@@ -1083,12 +1138,12 @@ def api_pedidos():
 
 @flask_app.route("/health")
 def health():
-    return jsonify({"status": "ok", "version": "6.4", "db": "postgresql" if USE_PG else "sqlite"})
+    return jsonify({"status": "ok", "version": "6.5", "db": "postgresql" if USE_PG else "sqlite"})
 
 @flask_app.route("/debug")
 @requiere_clave
 def debug():
-    info = {"version": "6.4", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
+    info = {"version": "6.5", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
     try:
         conn = get_conn(); cur = conn.cursor()
         cur.execute('SELECT COUNT(*) FROM tbl_Catalogo'); info["catalogo_count"] = cur.fetchone()[0]
