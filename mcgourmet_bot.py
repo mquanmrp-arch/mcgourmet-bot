@@ -1,14 +1,18 @@
 """
-McGourmet Bot v6.1 - Catálogo Visual + Landing Page
+McGourmet Bot v6.4 - Catálogo Visual + Landing Page
 Flask + PostgreSQL + Carrito UI con imágenes desde GitHub
 Se Elimina el Envio message x wsap de cliente a 2615024133 
 Envio message x Telegram a 2616741098
 Se adiciona la opcion de imprimir el remito en pdf
 version Oct-2026 mrp — v6.1 botón Inicio en header y en formulario/remito
+v6.2 Nov-2026 — fix remito PDF: incluye cliente, teléfono y aclaraciones; textos largos con salto de línea
+v6.3 Nov-2026 — precios, subtotales y total del pedido se toman de tbl_Catalogo (no del navegador)
+v6.4 Nov-2026 — /pedidos, /debug y /seed protegidas con ADMIN_KEY; fecha y hora de Argentina (UTC-3)
 """
 
-import os, uuid, threading, time, urllib.request, urllib.parse, json
-from datetime import datetime
+import os, uuid, threading, time, urllib.request, urllib.parse, json, hmac
+from datetime import datetime, timezone, timedelta
+from functools import wraps
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
@@ -30,6 +34,17 @@ LOGO_URL = f"{GITHUB_IMAGES_BASE}/logo.png"
 
 LIMITE_PEDIDOS_DIA = int(os.environ.get("LIMITE_PEDIDOS_DIA", "50"))
 LIMITE_UNIDADES    = int(os.environ.get("LIMITE_UNIDADES", "2"))
+
+# Clave para las rutas privadas (/pedidos, /debug, /seed).
+# Definir ADMIN_KEY en Render → Environment. Sin clave definida, esas rutas quedan bloqueadas.
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
+
+# Hora oficial argentina (UTC-3, sin horario de verano)
+TZ_AR = timezone(timedelta(hours=-3), "ART")
+
+def ahora():
+    """Fecha y hora actual de Argentina, sin depender de la zona horaria del servidor."""
+    return datetime.now(TZ_AR)
 
 # ── BD: PostgreSQL ──────────────────────────────────────────────
 if DATABASE_URL:
@@ -114,14 +129,14 @@ def setup_database():
         count = row[0]  # cursor plano (no RealDictCursor) → siempre tupla
         if count == 0:
             productos = [
-                ("Pasteleria", "La Eulogia", "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
-                ("Pasteleria", "La Simona", "Alfajor blanco, relleno con crema Bariloche y pistacho - Caja de 6 unidades.", 18000.00),
-                ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.", 15000.00),
-                ("Pasteleria", "La Aurora",  "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.", 12000.00),
-                ("Pasteleria", "La Petrona",  "Alfajor de maicena - Caja de 12 unidades", 12000.00),
-                ("Pasteleria", "La Jacinta", "Tarta con crema de limón - Caja 1 unidad.", 23000.00),
-                ("Pasteleria", "La Rufina",  "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.", 12000.00),            
-                ("Pasteleria", "La Imara",      "Variedad de masas gourmet - Caja 6 porciones.", 12000.00),
+                ("Pasteleria", "La Eulogia",    "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
+                ("Pasteleria", "La Simona",     "Alfajor blanco, con crema Bariloche y pistacho - Caja de 6 unidades.",                    18000.00),
+                ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.",       15000.00),
+                ("Pasteleria", "La Rufina",     "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.",                    12000.00),
+                ("Pasteleria", "La Aurora",     "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.",                        12000.00),
+                ("Pasteleria", "La Petrona",    "Alfajor de maicena - Caja de 12 unidades.",                                               12000.00),
+                ("Pasteleria", "La Jacinta",    "Tarta con crema de limon - Caja 1 unidad.",                                               23000.00),
+                ("Pasteleria", "La Imara",      "Variedad de masas gourmet - Caja 6 porciones.",                                           18000.00),
             ]         
 
             sql = (f"INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES ({ph},{ph},{ph},{ph},1)"
@@ -170,7 +185,7 @@ def get_catalogo():
 
 def contar_pedidos_hoy():
     conn = get_conn(); cur = get_cur(conn)
-    hoy  = datetime.now().strftime("%Y-%m-%d")
+    hoy  = ahora().strftime("%Y-%m-%d")
     ph   = "%s" if USE_PG else "?"
     cur.execute(f"SELECT COUNT(*) AS cnt FROM tbl_PedBot WHERE fecha_pedido LIKE {ph} AND estado='Confirmado'", (f"{hoy}%",))
     row  = cur.fetchone()
@@ -185,7 +200,7 @@ def crear_pedido(session_id, nombre, telefono, notas):
     if USE_PG:
         sql += " RETURNING id_pedido"
     cur.execute(sql, (session_id, nombre, telefono,
-                      datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Confirmado", notas))
+                      ahora().strftime("%Y-%m-%d %H:%M:%S"), "Confirmado", notas))
     id_p = cur.fetchone()["id_pedido"] if USE_PG else cur.lastrowid
     conn.commit(); conn.close(); return id_p
 
@@ -289,8 +304,8 @@ def enviar_email(id_pedido):
         print(f"❌ Email error: {e}")
 
 # ── REMITO ─────────────────────────────────────────────────────
-def generar_remito(id_pedido, nombre, telefono, notas, carrito, total):
-    fecha  = datetime.now().strftime("%d/%m/%Y %H:%M")
+def generar_remito(id_pedido, nombre, telefono, notas, carrito, total, fecha=None):
+    fecha  = fecha or ahora().strftime("%d/%m/%Y %H:%M")
     sep    = "=" * 40
     lineas = [sep, "          McGourmet", "     Sabores que encantan",
               "       Tel: 261 5024133", sep,
@@ -311,14 +326,73 @@ def generar_remito(id_pedido, nombre, telefono, notas, carrito, total):
 # ── SESIONES ───────────────────────────────────────────────────
 sesiones = {}
 
+# ── Validar carrito contra el catálogo ─────────────────────────
+def validar_carrito(carrito_json):
+    """
+    Reconstruye el carrito con los datos de tbl_Catalogo.
+    Del frontend solo usa id_producto y cantidad; ignora nombre, precio y subtotal.
+    Devuelve (carrito, None) si está bien, o (None, mensaje_de_error).
+    """
+    if not isinstance(carrito_json, list):
+        return None, "El carrito no es válido."
+
+    # Unificar cantidades por producto
+    cantidades = {}
+    for item in carrito_json:
+        try:
+            id_prod  = int(item["id_producto"])
+            cantidad = int(item["cantidad"])
+        except (KeyError, TypeError, ValueError):
+            return None, "El carrito no es válido."
+        if cantidad < 1:
+            return None, "El carrito tiene cantidades no válidas."
+        cantidades[id_prod] = cantidades.get(id_prod, 0) + cantidad
+    if not cantidades:
+        return None, "El carrito está vacío."
+
+    conn = get_conn(); cur = get_cur(conn)
+    ph   = "%s" if USE_PG else "?"
+    carrito = []
+    try:
+        for id_prod, cantidad in cantidades.items():
+            cur.execute(
+                f"SELECT nombre_producto,descripcion,precio,disponible "
+                f"FROM tbl_Catalogo WHERE id_producto={ph}", (id_prod,))
+            prod = cur.fetchone()
+            if not prod:
+                return None, "Uno de los productos ya no está en el catálogo. Recargá la página."
+            nombre      = prod["nombre_producto"] if USE_PG else prod[0]
+            descripcion = prod["descripcion"]     if USE_PG else prod[1]
+            precio      = float(prod["precio"]    if USE_PG else prod[2])
+            disponible  = prod["disponible"]      if USE_PG else prod[3]
+            if not disponible:
+                return None, f"{nombre} no está disponible en este momento."
+            if cantidad > LIMITE_UNIDADES:
+                return None, f"El máximo por pedido es {LIMITE_UNIDADES} unidades de {nombre}."
+            carrito.append({
+                "id_producto": id_prod,
+                "nombre":      nombre,
+                "descripcion": descripcion or "",
+                "precio":      precio,
+                "cantidad":    cantidad,
+                "subtotal":    precio * cantidad,
+            })
+    finally:
+        conn.close()
+    return carrito, None
+
 # ── API: confirmar pedido desde el carrito visual ──────────────
 def confirmar_pedido_api(session_id, nombre, telefono, notas, carrito_json):
     """
     Recibe carrito como lista de {id_producto, nombre, precio, cantidad, subtotal}
     desde el frontend. Crea el pedido en BD y devuelve el remito.
     """
-    carrito = carrito_json  # ya es list[dict]
-    total   = sum(item["subtotal"] for item in carrito)
+    # Nombre, descripción, precio y subtotal salen SIEMPRE de tbl_Catalogo;
+    # del navegador solo se toman id_producto y cantidad.
+    carrito, error = validar_carrito(carrito_json)
+    if error:
+        return {"ok": False, "msg": error}
+    total = sum(item["subtotal"] for item in carrito)
 
     if contar_pedidos_hoy() >= LIMITE_PEDIDOS_DIA:
         return {"ok": False, "msg": "Lo sentimos, alcanzamos el límite de pedidos por hoy.\nPara pedidos especiales escríbenos por mail."}
@@ -327,12 +401,14 @@ def confirmar_pedido_api(session_id, nombre, telefono, notas, carrito_json):
     for item in carrito:
         agregar_detalle(id_p, item["id_producto"], item["cantidad"])
 
-    remito = generar_remito(id_p, nombre, telefono, notas, carrito, total)
+    fecha  = ahora().strftime("%d/%m/%Y %H:%M")
+    remito = generar_remito(id_p, nombre, telefono, notas, carrito, total, fecha)
     threading.Thread(target=enviar_email,    args=(id_p,), daemon=True).start()
     threading.Thread(target=enviar_telegram, args=(id_p,), daemon=True).start()
     # Número de WhatsApp de McGourmet para el botón del cliente
     wa_numero = os.environ.get("WA_NUMERO", "5492615024133")  # formato internacional sin +
-    return {"ok": True, "id_pedido": id_p, "remito": remito, "total": total, "wa_numero": wa_numero}
+    return {"ok": True, "id_pedido": id_p, "remito": remito, "total": total,
+            "fecha": fecha, "items": carrito, "wa_numero": wa_numero}
 
 # ── FLASK ──────────────────────────────────────────────────────
 setup_database()
@@ -512,6 +588,7 @@ const LIMITE_UNIDADES = __LIMITE_UNIDADES__;
 let catalogo = [];
 let carrito  = {};  // id_producto -> {id_producto, nombre, precio, imagen, cantidad}
 let vista    = 'catalogo'; // catalogo | carrito | form | remito
+let ultimoPedido = null;   // datos del último pedido confirmado (para el PDF del remito)
 
 // ── Tab ────────────────────────────────────────────────────────
 function showTab(tab) {
@@ -785,6 +862,19 @@ async function enviarPedido() {
     const data = await resp.json();
 
     if (data.ok) {
+      // Guardar los datos ANTES de mostrar el remito: mostrarRemito() reemplaza
+      // el formulario y los inputs f-nombre / f-tel / f-notas dejan de existir.
+      ultimoPedido = {
+        id_pedido: data.id_pedido,
+        nombre, telefono: tel, notas,
+        fecha: data.fecha,   // fecha y hora de Argentina, la misma del remito en pantalla
+        // precios y total confirmados por el servidor (tbl_Catalogo)
+        total: data.total,
+        items: data.items.map(i => ({
+          nombre: i.nombre, descripcion: i.descripcion || '',
+          precio: i.precio, cantidad: i.cantidad, subtotal: i.subtotal,
+        })),
+      };
       mostrarRemito(data.remito, data.id_pedido);
       carrito = {};
       actualizarBadge();
@@ -819,12 +909,37 @@ function nuevoPedido() {
 
 // ── Generar PDF del remito ──────────────────────────────────────
 function descargarRemitoPDF(id_pedido) {
+  const ped = ultimoPedido;
+  if (!ped || ped.id_pedido !== id_pedido) {
+    toast('No se encontraron los datos del pedido para generar el PDF', 4000);
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a6' });
 
-  const W = doc.internal.pageSize.getWidth();
+  const W      = doc.internal.pageSize.getWidth();
+  const H      = doc.internal.pageSize.getHeight();
   const margen = 10;
+  const ancho  = W - margen * 2;
   let y = 12;
+  const money = n => '$ ' + Number(n).toLocaleString('es-AR');
+
+  // Escribe texto con salto de línea automático y salto de página si hace falta
+  function escribir(texto, opts = {}) {
+    const x     = opts.x || margen;
+    const alto  = opts.alto || 4;
+    const lineas = doc.splitTextToSize(String(texto), ancho - (x - margen));
+    lineas.forEach(l => {
+      if (y > H - 12) { doc.addPage(); y = 12; }
+      doc.text(l, x, y);
+      y += alto;
+    });
+  }
+  function separador() {
+    if (y > H - 12) { doc.addPage(); y = 12; }
+    doc.line(margen, y, W - margen, y); y += 5;
+  }
 
   // Encabezado
   doc.setFontSize(16);
@@ -835,70 +950,65 @@ function descargarRemitoPDF(id_pedido) {
   doc.text('Sabores que encantan', W / 2, y, { align: 'center' }); y += 5;
   doc.text('Tel: 261 5024133', W / 2, y, { align: 'center' }); y += 5;
 
-  // Línea separadora
   doc.setDrawColor(181, 38, 30);
   doc.setLineWidth(0.5);
-  doc.line(margen, y, W - margen, y); y += 5;
+  separador();
 
   // Número de remito y fecha
-  const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`REMITO N° ${String(id_pedido).padStart(4,'0')}`, margen, y); y += 5;
+  escribir(`REMITO N° ${String(id_pedido).padStart(4,'0')}`, { alto: 5 });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Fecha: ${fecha}`, margen, y); y += 4;
+  escribir(`Fecha: ${ped.fecha}`);
 
-  // Datos del cliente desde el formulario (ya enviado)
-  const nombre = (document.getElementById('f-nombre') || {}).value || '';
-  const tel    = (document.getElementById('f-tel')    || {}).value || '';
-  const notas  = (document.getElementById('f-notas')  || {}).value || '';
-  if (nombre) { doc.text(`Cliente: ${nombre}`, margen, y); y += 4; }
-  if (tel)    { doc.text(`Tel: ${tel}`,         margen, y); y += 4; }
-
-  doc.line(margen, y, W - margen, y); y += 5;
+  // Datos del cliente
+  escribir(`Cliente: ${ped.nombre}`);
+  escribir(`Tel: ${ped.telefono}`);
+  y += 1;
+  separador();
 
   // Detalle de productos
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text('DETALLE', margen, y); y += 5;
-  doc.setFont('helvetica', 'normal');
+  escribir('DETALLE', { alto: 5 });
 
-  const items = Object.values(carrito.length !== undefined ? {} : carrito);
-  // Leer items del DOM si carrito ya fue limpiado
-  const remitoDom = document.querySelector('.remito-box');
-  if (remitoDom) {
-    const lineas = remitoDom.textContent.split('\n');
-    let enDetalle = false;
-    let total = '';
-    lineas.forEach(linea => {
-      const l = linea.trim();
-      if (!l || l.startsWith('=') || l.startsWith('-')) return;
-      if (l === 'DETALLE') { enDetalle = true; return; }
-      if (l.startsWith('TOTAL:')) { total = l; enDetalle = false; }
-      if (enDetalle) {
-        doc.text(l, margen, y); y += 4;
-        if (y > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); y = 12; }
-      }
-    });
-    doc.line(margen, y, W - margen, y); y += 5;
-    if (total) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(total, margen, y); y += 6;
+  ped.items.forEach(it => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    escribir(`${it.cantidad}x ${it.nombre}`);
+    doc.setFont('helvetica', 'normal');
+    if (it.descripcion) {
+      doc.setFontSize(8);
+      escribir(it.descripcion, { x: margen + 3, alto: 3.5 });
     }
-  }
+    doc.setFontSize(9);
+    escribir(`${money(it.precio)} c/u  =  ${money(it.subtotal)}`, { x: margen + 3 });
+    y += 1.5;
+  });
 
-  // Notas
-  if (notas) {
+  separador();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  if (y > H - 12) { doc.addPage(); y = 12; }
+  doc.text('TOTAL:', margen, y);
+  doc.text(money(ped.total), W - margen, y, { align: 'right' }); y += 6;
+
+  // Aclaraciones
+  if (ped.notas) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    escribir('Aclaraciones:');
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text(`Notas: ${notas}`, margen, y); y += 5;
+    doc.setFontSize(8.5);
+    escribir(ped.notas, { alto: 3.8 });
+    y += 1.5;
   }
 
-  doc.line(margen, y, W - margen, y); y += 5;
   doc.setFont('helvetica', 'normal');
+  separador();
   doc.setFontSize(8);
+  if (y > H - 8) { doc.addPage(); y = 12; }
   doc.text('¡Gracias por elegirnos! Te contactaremos pronto.', W / 2, y, { align: 'center' });
 
   doc.save(`McGourmet-Remito-${String(id_pedido).padStart(4,'0')}.pdf`);
@@ -910,6 +1020,22 @@ cargarCatalogo();
 </body>
 </html>
 """
+
+# ── Protección de rutas privadas ───────────────────────────────
+def requiere_clave(f):
+    """
+    Exige la clave ADMIN_KEY para entrar a la ruta.
+    Se puede enviar en la URL (?clave=...) o en el encabezado X-Admin-Key.
+    """
+    @wraps(f)
+    def envoltura(*args, **kwargs):
+        if not ADMIN_KEY:
+            return jsonify({"ok": False, "msg": "Ruta deshabilitada: falta definir ADMIN_KEY en el servidor."}), 503
+        clave = request.args.get("clave", "") or request.headers.get("X-Admin-Key", "")
+        if not hmac.compare_digest(clave.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
+            return jsonify({"ok": False, "msg": "Acceso no autorizado."}), 401
+        return f(*args, **kwargs)
+    return envoltura
 
 # ── RUTAS FLASK ────────────────────────────────────────────────
 @flask_app.route("/")
@@ -947,6 +1073,7 @@ def api_pedido():
     return jsonify(resultado)
 
 @flask_app.route("/pedidos")
+@requiere_clave
 def api_pedidos():
     conn = get_conn(); cur = get_cur(conn)
     cur.execute("SELECT * FROM tbl_PedBot ORDER BY fecha_pedido DESC")
@@ -956,11 +1083,12 @@ def api_pedidos():
 
 @flask_app.route("/health")
 def health():
-    return jsonify({"status": "ok", "version": "5.0", "db": "postgresql" if USE_PG else "sqlite"})
+    return jsonify({"status": "ok", "version": "6.4", "db": "postgresql" if USE_PG else "sqlite"})
 
 @flask_app.route("/debug")
+@requiere_clave
 def debug():
-    info = {"version": "5.0", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
+    info = {"version": "6.4", "USE_PG": USE_PG, "DATABASE_URL_set": bool(DATABASE_URL)}
     try:
         conn = get_conn(); cur = conn.cursor()
         cur.execute('SELECT COUNT(*) FROM tbl_Catalogo'); info["catalogo_count"] = cur.fetchone()[0]
@@ -972,6 +1100,7 @@ def debug():
     return jsonify(info)
 
 @flask_app.route("/seed")
+@requiere_clave
 def seed():
     try:
         conn = get_conn(); cur = conn.cursor()
@@ -982,13 +1111,13 @@ def seed():
             return jsonify({"status": "ok", "msg": f"Catálogo ya tiene {count} productos"})
         ph = "%s" if USE_PG else "?"
         productos = [
-            ("Pasteleria", "La Eulogia",    "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 18000.00),
-            ("Pasteleria", "La Simona",     "Alfajor blanco, con crema Bariloche y pistacho - Caja de 6 unidades.",    15000.00),
-            ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.",        15000.00),
+            ("Pasteleria", "La Eulogia",    "Alfajor negro de vino malbec, relleno dulce de leche y jalea de vino - Caja 6 unidades.", 15000.00),
+            ("Pasteleria", "La Simona",     "Alfajor blanco, con crema Bariloche y pistacho - Caja de 6 unidades.",                    18000.00),
+            ("Pasteleria", "La Florentina", "Alfajor negro, relleno dulce de leche y mermelada de membrillo - Caja 6 unidades.",       15000.00),
+            ("Pasteleria", "La Rufina",     "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.",                    12000.00),
             ("Pasteleria", "La Aurora",     "Alfajor de chocolate con relleno de almendras - Caja 6 unidades.",                        12000.00),
             ("Pasteleria", "La Petrona",    "Alfajor de maicena - Caja de 12 unidades.",                                               12000.00),
-            ("Pasteleria", "La Jacinta",    "Tarta con crema de limón - Caja 1 unidad.",                                               23000.00),
-            ("Pasteleria", "La Rufina",     "Alfajor de chocolate con relleno de chocotorta - Caja de 6 unidades.",                    12000.00),
+            ("Pasteleria", "La Jacinta",    "Tarta con crema de limon - Caja 1 unidad.",                                               23000.00),
             ("Pasteleria", "La Imara",      "Variedad de masas gourmet - Caja 6 porciones.",                                           18000.00),
         ]
         sql = (f"INSERT INTO tbl_Catalogo (categoria,nombre_producto,descripcion,precio,disponible) VALUES ({ph},{ph},{ph},{ph},1)")
