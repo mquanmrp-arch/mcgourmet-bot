@@ -1,7 +1,17 @@
 """
-McGourmet Chef Bot v2.2
+McGourmet Chef Bot v2.4
 Asistente de maridaje para clientes con pedido Confirmado.
 Flask + OpenAI GPT-4o + PostgreSQL
+
+CAMBIOS v2.4 (Nov-2026):
+- El límite de consultas se cuenta en tbl_CheffMaridaje por pedido (ya no se
+  reinicia al recargar la página ni al reiniciarse el servidor)
+- Regla nueva del Chef: "salsas" = acompañamientos dulces (miel, jaleas, mermeladas) según el producto
+
+CAMBIOS v2.3 (Nov-2026):
+- Fix scroll del chat: se podía perder el inicio de la conversación sin poder subir
+- Fecha y hora de Argentina (UTC-3), igual que mcgourmet_bot (necesario para "pedido de hoy")
+- /chef/consultas protegida con ADMIN_KEY
 
 CAMBIOS v2.2:
 - SYSTEM_PROMPT actualizado al nuevo catálogo de pastelería (alfajores artesanales)
@@ -18,8 +28,9 @@ CAMBIOS v2.0/v2.1:
 - Historial limitado a MAX_HISTORIAL_TURNOS para controlar tokens
 """
 
-import os, uuid, json
-from datetime import datetime
+import os, uuid, json, hmac
+from datetime import datetime, timezone, timedelta
+from functools import wraps
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
@@ -29,6 +40,17 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 MAX_CONSULTAS       = 2   # Límite de preguntas al chef por sesión
 MAX_HISTORIAL_TURNOS = 6  # Máximo de turnos (pares user/assistant) a enviar a la API
+
+# Clave para la ruta privada /chef/consultas. Definir ADMIN_KEY en Render → Environment
+# de ESTE servicio (mcgourmet-cheff). Sin clave definida, la ruta queda bloqueada.
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
+
+# Hora oficial argentina (UTC-3). Debe coincidir con mcgourmet_bot, que guarda
+# fecha_pedido en hora argentina: "pedido de hoy" se compara contra esa fecha.
+TZ_AR = timezone(timedelta(hours=-3), "ART")
+
+def ahora():
+    return datetime.now(TZ_AR)
 
 if DATABASE_URL:
     import psycopg2
@@ -119,7 +141,7 @@ def registrar_consulta(id_pedido, nombre_cliente, telefono, num_consulta, pregun
                 id_pedido,
                 nombre_cliente,
                 telefono,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                ahora().strftime("%Y-%m-%d %H:%M:%S"),
                 num_consulta,
                 pregunta,
                 respuesta,
@@ -130,6 +152,33 @@ def registrar_consulta(id_pedido, nombre_cliente, telefono, num_consulta, pregun
         conn.close()
     except Exception as e:
         print(f"Error registrar_consulta: {e}")
+
+# ── Contar consultas ya hechas para un pedido ──────────────────
+def contar_consultas(id_pedido):
+    """
+    Cantidad de consultas registradas en tbl_CheffMaridaje para ese pedido.
+    Es la fuente de verdad del límite: no se reinicia al recargar la página
+    ni al reiniciarse el servidor. Devuelve None si la BD falla.
+    """
+    try:
+        conn = get_conn()
+        cur  = get_cur(conn)
+        ph   = "%s" if USE_PG else "?"
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM tbl_CheffMaridaje WHERE id_pedido = {ph}", (id_pedido,))
+        row  = cur.fetchone()
+        conn.close()
+        return int(row["cnt"] if USE_PG else row[0])
+    except Exception as e:
+        print(f"Error contar_consultas: {e}")
+        return None
+
+def consultas_usadas(s):
+    """Consultas usadas por el pedido de la sesión: lo que diga la BD, y si la BD
+    falla, el contador en memoria (nunca menos que este)."""
+    en_bd = contar_consultas(s["id_pedido"])
+    if en_bd is None:
+        return s["consultas_realizadas"]
+    return max(en_bd, s["consultas_realizadas"])
 
 # ── Verificar pedido ───────────────────────────────────────────
 def verificar_pedido(id_pedido, telefono):
@@ -142,7 +191,7 @@ def verificar_pedido(id_pedido, telefono):
         conn = get_conn()
         cur  = get_cur(conn)
         ph   = "%s" if USE_PG else "?"
-        hoy  = datetime.now().strftime("%Y-%m-%d")
+        hoy  = ahora().strftime("%Y-%m-%d")
 
         cur.execute(
             f"""SELECT p.id_pedido, p.nombre_cliente, p.telefono,
@@ -242,6 +291,8 @@ REGLAS DEL CHEF
 - Máximo 3 oraciones por respuesta. Sé específico, no genérico ni repetitivo.
 - Priorizá los productos que el cliente pidió en su pedido al dar sugerencias.
 - Si mencionan un producto, usá su nombre exacto (La Eulogia, La Simona, La Florentina, etc.).
+- Si preguntan por salsas, entendé que son acompañamientos dulces: elegí el que mejor combine con el
+  producto del cliente (miel, jaleas, mermeladas, coulis de frutas, etc.) y explicá por qué. Nunca salsas saladas.
 - Si la pregunta no es sobre gastronomía o maridaje de McGourmet, redirigí amablemente.
 - Usá el nombre del cliente cuando lo conozcas.
 - No menciones precios ni disponibilidad; eso lo gestiona el bot de pedidos."""
@@ -328,15 +379,26 @@ def procesar_chef(session_id, mensaje):
         s["nombre_cliente"]  = pedido["nombre_cliente"]
         s["productos_pedido"] = pedido["productos"]
         s["etapa"]           = "chat"
+
+        # v2.4: las consultas ya usadas por este pedido se leen de la BD
+        s["consultas_realizadas"] = consultas_usadas(s)
+        restantes = MAX_CONSULTAS - s["consultas_realizadas"]
+        if restantes <= 0:
+            return (f"¡Hola de nuevo, {pedido['nombre_cliente']}!\n\n"
+                    f"Este pedido ya usó sus {MAX_CONSULTAS} consultas con el Chef. "
+                    f"Para continuar, realizá una nueva compra. 🙏")
+        disponibles = "1 consulta disponible" if restantes == 1 else f"{restantes} consultas disponibles"
         return (f"¡Bienvenido/a {pedido['nombre_cliente']}! 🎉\n\n"
                 f"Veo que hoy pediste: {pedido['productos']}.\n\n"
-                f"Tenés {MAX_CONSULTAS} consultas disponibles con el Chef. "
+                f"Tenés {disponibles} con el Chef. "
                 f"¿En qué te puedo asesorar? Preguntame sobre maridajes, salsas, guarniciones o cómo servir tus platos.")
 
     # Etapa 4: chat libre con el Chef
     if etapa == "chat":
 
         # ── CAMBIO v2.0: Control del límite en Python, ANTES de llamar a la API ──
+        # v2.4: el contador sale de tbl_CheffMaridaje (por pedido), no de la sesión
+        s["consultas_realizadas"] = consultas_usadas(s)
         if s["consultas_realizadas"] >= MAX_CONSULTAS:
             return f"Ya alcanzaste el máximo de {MAX_CONSULTAS} consultas disponibles. Para continuar, realizá una nueva compra. 🙏"
 
@@ -396,7 +458,7 @@ HTML_CHEF = """<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-content:center;height:100dvh;overflow:hidden;}
 .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;height:100dvh;background:#fff;box-shadow:0 24px 80px rgba(92,61,46,.2);overflow:hidden;border-left:1px solid var(--border);border-right:1px solid var(--border);}
-.header{background:var(--brand);padding:8px 14px;display:flex;align-items:center;gap:10px;position:relative;}
+.header{flex-shrink:0;background:var(--brand);padding:8px 14px;display:flex;align-items:center;gap:10px;position:relative;}
 .header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent,var(--gold));}
 .avatar{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid rgba(255,255,255,.3);}
 .header-info h1{font-family:'Playfair Display',serif;color:#fff;font-size:15px;line-height:1.1;}
@@ -404,23 +466,26 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
 .sdot{width:6px;height:6px;background:#4ADE80;border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .status span{color:rgba(255,255,255,.6);font-size:10px;}
-.msgs{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;background:var(--cream);}
+.msgs{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 14px;display:flex;flex-direction:column;gap:8px;background:var(--cream);}
+/* Los mensajes quedan abajo cuando son pocos SIN usar justify-content:flex-end,
+   que hace que lo que desborda hacia arriba no se pueda scrollear. */
+.msgs > :first-child{margin-top:auto;}
 .msgs::-webkit-scrollbar{width:3px;}
 .msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-.bw{display:flex;align-items:flex-end;gap:8px;}
+.bw{display:flex;align-items:flex-end;gap:8px;flex-shrink:0;}
 .bw.user{flex-direction:row-reverse;}
 .av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--gold);border:1.5px solid var(--border);}
 .av.user-av{background:var(--brand);font-size:13px;color:#fff;}
 .bubble{max-width:80%;padding:10px 14px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 .bubble.bot{background:#fff;color:var(--text);border-radius:16px 16px 16px 4px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .bubble.user{background:var(--brand);color:#fff;border-radius:16px 16px 4px 16px;}
-.barra-inicio{background:#fff;border-bottom:1px solid var(--border);padding:4px 14px;}
+.barra-inicio{flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);padding:4px 14px;}
 .barra-inicio a{display:inline-flex;align-items:center;gap:5px;color:var(--brand);font-size:13px;font-weight:700;text-decoration:none;}
 .barra-inicio a:hover{opacity:.75;}
-.qr{display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-top:1px solid var(--border);}
+.qr{flex-shrink:0;display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-top:1px solid var(--border);}
 .qb{background:transparent;border:1.5px solid var(--brand);color:var(--brand);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;transition:all .2s;font-weight:700;}
 .qb:hover{background:var(--brand);color:#fff;}
-.inp{padding:8px 14px 10px;display:flex;gap:8px;background:#fff;}
+.inp{flex-shrink:0;padding:8px 14px 10px;display:flex;gap:8px;background:#fff;}
 .inp input{flex:1;border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;font-size:13.5px;outline:none;color:var(--text);background:var(--cream);transition:border .2s;}
 .inp input:focus{border-color:var(--brand);}
 .inp button{width:42px;height:42px;border-radius:50%;background:var(--brand);border:none;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;transition:background .2s;display:flex;align-items:center;justify-content:center;}
@@ -444,7 +509,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);display:flex;justify-
   <div class="qr" id="qr">
     <button class="qb" onclick="send('Que sugerencias tenes para mi pedido?')">Sugerencias del Chef</button>
     <button class="qb" onclick="send('Como sirvo el plato seleccionado?')">Como servirlos</button>
-    <button class="qb" onclick="send('Que salsa sugeries?')">Salsas</button>
+    <button class="qb" onclick="send('Que salsa sugeris?')">Salsas</button>
   </div>
   <div class="inp">
     <input id="inp" type="text" placeholder="Preguntale al Chef..." autocomplete="off" onkeydown="if(event.key==='Enter')send()">
@@ -488,6 +553,7 @@ async function send(t){
     // Mostrar botones de respuesta rápida al llegar al chat (bienvenida del chef)
     if(d.response.includes('¡Bienvenido')){
       document.getElementById('qr').style.display='flex';
+      const c = document.getElementById('msgs'); c.scrollTop = c.scrollHeight;
     }
   } catch(e){ hideT(); addMsg('Error de conexion. Intenta nuevamente.', 'bot'); }
 }
@@ -505,7 +571,20 @@ def chat():
     msg  = data.get("message", "").strip()
     return jsonify({"session_id": sid, "response": procesar_chef(sid, msg)})
 
+def requiere_clave(f):
+    """Exige ADMIN_KEY: en la URL (?clave=...) o en el encabezado X-Admin-Key."""
+    @wraps(f)
+    def envoltura(*args, **kwargs):
+        if not ADMIN_KEY:
+            return jsonify({"ok": False, "msg": "Ruta deshabilitada: falta definir ADMIN_KEY en el servidor."}), 503
+        clave = request.args.get("clave", "") or request.headers.get("X-Admin-Key", "")
+        if not hmac.compare_digest(clave.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
+            return jsonify({"ok": False, "msg": "Acceso no autorizado."}), 401
+        return f(*args, **kwargs)
+    return envoltura
+
 @chef_app.route("/chef/consultas")
+@requiere_clave
 def consultas():
     try:
         conn = get_conn()
